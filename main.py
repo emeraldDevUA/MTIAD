@@ -70,23 +70,26 @@ th_image = threshold_processing(gray_image, width, height, 95)
 
 hist_original = get_histogram(gray_image)
 hist_threshold = get_histogram(th_image)
-
+hist_grayscale = get_histogram(gray_image)
 fig, axs = plt.subplots(2, 3, figsize=(10, 8))
 
 axs[0, 0].imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 axs[0, 0].set_title('Original Image')
 axs[0, 0].axis('off')
 
-axs[0, 1].imshow(th_image, cmap='gray')
-axs[0, 1].set_title('Threshold Image')
-axs[0, 1].axis('off')
-axs[0, 2].imshow(gray_image, cmap='gray')
-axs[0, 2].set_title('Grayscale Image')
+axs[0, 2].imshow(th_image, cmap='gray')
+axs[0, 2].set_title('Threshold Image')
+axs[0, 2].axis('off')
+
+axs[0, 1].imshow(gray_image, cmap='gray')
+axs[0, 1].set_title('Grayscale Image')
+axs[1, 1].plot(hist_grayscale, color='black')
+
 axs[1, 0].plot(hist_original, color='black')
 axs[1, 0].set_title('Histogram (Original)')
 
-axs[1, 1].plot(hist_threshold, color='black')
-axs[1, 1].set_title('Histogram (Threshold)')
+axs[1, 2].plot(hist_threshold, color='black')
+axs[1, 2].set_title('Histogram (Threshold)')
 
 plt.tight_layout()
 plt.show()
