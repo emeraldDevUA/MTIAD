@@ -4,6 +4,30 @@ import matplotlib.pyplot as plt
 import math as m
 
 
+def segment_image_no_overlap(image, segment_size):
+    """
+    Segments the image into equal parts without overlap.
+
+    Parameters:
+    - image: Input image
+    - segment_size: Size of each square segment (segment_size x segment_size)
+
+    Returns:
+    - List of image segments
+    """
+    height, width = image.shape  # Get the dimensions of the image
+    segments = []  # Initialize an empty list to store segments
+
+    # Loop through the image to create segments of size `segment_size x segment_size`
+    for y in range(0, height, segment_size):
+        for x in range(0, width, segment_size):
+            segment = image[y:y + segment_size, x:x + segment_size]  # Extract each segment
+            if segment.shape[0] == segment_size and segment.shape[1] == segment_size:
+                segments.append(segment)  # Add the segment to the list
+
+    return segments  # Return the list of segments
+
+
 def get_histogram(image):
     hist, bins = np.histogram(image.flatten(), 256, [0, 256])
     return hist
@@ -25,24 +49,25 @@ def get_probs(image, w, h):
             r = int(r)
             b = int(b)
             g = int(g)
-            if r > g + 50 and r > b + 50:
+            if r > g + 30 and r > b + 30:
                 red_cnt += 1.0
-            if b > r + 50 and b > g + 50:
+            if b > r + 30 and b > g + 30:
                 blue_cnt += 1.0
-            if g > r + 50 and g > b + 50:
+            if g > r + 30 and g > b + 30:
                 green_cnt += 1.0
             if r > 150 and g > 150 and b < 100:
                 yellow_cnt += 1.0
             if r > 200 and g > 200 and b > 200:
                 white_cnt += 0.1
-            else: other_color += 1.0
+            else:
+                other_color += 1.0
     N = 3
     p1 = round(red_cnt / total_cnt, N)
     p2 = round(blue_cnt / total_cnt, N)
     p3 = round(green_cnt / total_cnt, N)
     p4 = round(yellow_cnt / total_cnt, N)
     p5 = round(white_cnt / total_cnt, N)
-    p6 = round(other_color/total_cnt, N)
+    p6 = round(other_color / total_cnt, N)
 
     return [p1, p2, p3, p4, p5, p6]
 
@@ -53,6 +78,25 @@ def get_entropy(probs):
         if p > 0:
             final_value += p * m.log(p, 2)
     return -final_value
+
+
+def hartley_entropy(img):
+    # Перетворюємо зображення на масив numpy
+    img_array = np.array(img)
+
+    # Рахуємо кількість унікальних кольорів у зображенні
+    unique_colors = np.unique(img_array.reshape(-1, img_array.shape[-1]), axis=0)
+
+    # Кількість унікальних кольорів
+    num_unique_colors = unique_colors.shape[0]
+
+    # Міра Хартлі
+    if num_unique_colors > 0:
+        H0 = m.log2(num_unique_colors)
+    else:
+        H0 = 0
+
+    return H0
 
 
 def markov_process(img):
@@ -79,7 +123,7 @@ def markov_process(img):
     return transition_matrix
 
 
-def plot_combined_3d(hist, entropy, transition_matrix):
+def plot_combined_3d(hist, transition_matrix):
     fig = plt.figure(figsize=(18, 12))
 
     # Pixels
@@ -87,10 +131,10 @@ def plot_combined_3d(hist, entropy, transition_matrix):
     x_hist = np.arange(len(hist))
     y_hist = np.zeros_like(hist)
     ax1.bar(x_hist, hist, zs=0, zdir='y', alpha=0.8, color='blue', width=0.5)
-    ax1.set_title('Histogram of Pixel Intensities')
-    ax1.set_xlabel('Intensity')
-    ax1.set_ylabel('Counts')
-    ax1.set_zlabel('Frequency')
+    ax1.set_title('Probabilities')
+    ax1.set_xlabel('Color')
+    # ax1.set_ylabel('Counts')
+    ax1.set_zlabel('Probability')
 
     # Entropy
     ax2 = fig.add_subplot(132, projection='3d')
@@ -109,7 +153,7 @@ def plot_combined_3d(hist, entropy, transition_matrix):
     z = transition_matrix.flatten()
 
     ax3.bar3d(x.flatten(), y.flatten(), np.zeros_like(z), 1, 1, z, shade=True)
-    ax3.set_title('3D Visualization of Transition Matrix')
+    ax3.set_title('Transition Matrix')
     ax3.set_xlabel('Current Pixel Intensity')
     ax3.set_ylabel('Next Pixel Intensity')
     ax3.set_zlabel('Probability')
@@ -124,9 +168,6 @@ height, width, channels = image.shape
 
 probs = get_probs(image, width, height)
 entropy = get_entropy(probs)
-
 hist = get_histogram(image)
-
 transition_matrix = markov_process(image)
-
-plot_combined_3d(hist, entropy, transition_matrix)
+plot_combined_3d(probs, transition_matrix)
