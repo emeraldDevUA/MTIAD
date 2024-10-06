@@ -81,16 +81,19 @@ def shanon_entropy(probs):
 
 
 def hartley_entropy(img):
-    # Перетворюємо зображення на масив numpy
+    # Convert image to grayscale (if it's not already)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 'L' mode is for grayscale in PIL
+
+    # Convert image to numpy array
     img_array = np.array(img)
 
-    # Рахуємо кількість унікальних кольорів у зображенні
-    unique_colors = np.unique(img_array.reshape(-1, img_array.shape[-1]), axis=0)
+    # Count unique grayscale values
+    unique_colors = np.unique(img_array)
 
-    # Кількість унікальних кольорів
+    # Number of unique grayscale values
     num_unique_colors = unique_colors.shape[0]
 
-    # Міра Хартлі
+    # Hartley entropy
     if num_unique_colors > 0:
         H0 = m.log2(num_unique_colors)
     else:
@@ -122,7 +125,38 @@ def markov_process(img):
 
     return transition_matrix
 
+# First-order Markov Process Calculation
+def markov_entropy(image_channel):
+    # Create a 256x256 transition matrix (for pixels 0-255)
+    transition_matrix = np.zeros((256, 256), dtype=int)
 
+    # Find transitions between pixels
+    pixel_values = image_channel.flatten()
+    for i in range(len(pixel_values) - 1):
+        current_pixel = pixel_values[i]
+        next_pixel = pixel_values[i + 1]
+        transition_matrix[current_pixel, next_pixel] += 1
+
+    # Normalize the transition matrix
+    transition_matrix = transition_matrix / np.sum(transition_matrix)
+
+    # Calculate the entropy for the process
+    entropy_value = 0
+    for row in transition_matrix:
+        for transition in row:
+            if transition > 0:
+                entropy_value -= transition * np.log2(transition)
+
+    return entropy_value
+
+def calculate_entropy(transition_matrix):
+    entropy = 0
+    for row in transition_matrix:
+        # Remove zero probabilities to avoid log(0)
+        non_zero_probs = row[row > 0]
+        entropy += -np.sum(non_zero_probs * np.log2(non_zero_probs))
+
+    return entropy
 def plot_combined_3d(hist, transition_matrix, avg_matrix):
     fig = plt.figure(figsize=(24, 12))
 
@@ -183,17 +217,23 @@ probs = get_probs(image, width, height)
 entropy = shanon_entropy(probs)
 partial_sh_entropy = 0
 partial_hly_entropy = 0
-matrix_temp = -1
+matrix_temp = markov_process(segments[0])
+cnt = 0
 for i in segments:
+
     partial_sh_entropy += shanon_entropy(get_probs(i, 64, 64))
     partial_hly_entropy += hartley_entropy(i)
-    if matrix_temp == -1:
-        matrix_temp = markov_process(i)
+    if cnt != 0:
+        matrix_temp += markov_process(i)
+    cnt = cnt + 1
 
 partial_sh_entropy = partial_sh_entropy / (len(segments))
 partial_hly_entropy = partial_hly_entropy / len(segments)
 matrix_temp = matrix_temp / len(segments)
 my_array = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy]
 hist = get_histogram(image)
+
 transition_matrix = markov_process(image)
 plot_combined_3d(my_array, transition_matrix, matrix_temp)
+
+print((markov_entropy(image)))
