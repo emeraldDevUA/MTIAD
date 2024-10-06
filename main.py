@@ -15,7 +15,7 @@ def segment_image_no_overlap(image, segment_size):
     Returns:
     - List of image segments
     """
-    height, width = segment_size, segment_size  # Get the dimensions of the image
+    height, width, _ = image.shape  # Get the actual dimensions of the image
     segments = []  # Initialize an empty list to store segments
 
     # Loop through the image to create segments of size `segment_size x segment_size`
@@ -157,61 +157,53 @@ def calculate_entropy(transition_matrix):
         entropy += -np.sum(non_zero_probs * np.log2(non_zero_probs))
 
     return entropy
-def plot_combined_3d(hist, transition_matrix, avg_matrix):
-    fig = plt.figure(figsize=(24, 12))
 
-    # Pixels
-    ax1 = fig.add_subplot(131, projection='3d')
-    x_hist = np.arange(len(hist))
-    y_hist = np.zeros_like(hist)
-    ax1.bar(x_hist, hist, zs=0, zdir='y', alpha=0.8, color='red', width=0.5)
-    ax1.set_title('Entropy types')
-    # ax1.set_xlabel('Entropy')
-    # ax1.set_ylabel('Counts')
-    ax1.set_zlabel('Entropy value')
+def plot_single_entropy_chart(entropy_values):
+    fig = plt.figure(figsize=(10, 6))
 
-    # Entropy
-    # ax2 = fig.add_subplot(132, projection='3d')
-    # ax2.bar(['Entropy'], [entropy], zs=0, zdir='y', alpha=0.8, color='orange')
-    # ax2.set_title('Hartley Entropy')
-    # ax2.set_xlabel('Value')
-    # ax2.set_ylabel('Counts')
-    # ax2.set_zlabel('Entropy Value')
+    ax = fig.add_subplot(111)
+    x = ['Shannon Entropy', 'Hartley Entropy', 'Partial Shannon', 'Partial Hartley', 'Markov Entropy']
+    y = entropy_values
 
-    # Markov Process
-    ax3 = fig.add_subplot(132, projection='3d')
-    x = np.arange(transition_matrix.shape[0])
-    y = np.arange(transition_matrix.shape[1])
-    x, y = np.meshgrid(x, y)
+    ax.bar(x, y, color=['blue', 'green', 'orange', 'red', 'purple'])
 
-    z = transition_matrix.flatten()
+    ax.set_title('Entropy of the Entire Image and Parts')
+    ax.set_xlabel('Entropy Type')
+    ax.set_ylabel('Entropy Value')
 
-    ax3.bar3d(x.flatten(), y.flatten(), np.zeros_like(z), 1, 1, z, shade=True, color='yellow')
-    ax3.set_title('Transition Matrix')
-    ax3.set_xlabel('Current Pixel Intensity')
-    ax3.set_ylabel('Next Pixel Intensity')
-    ax3.set_zlabel('Probability')
-
-    ax3 = fig.add_subplot(133, projection='3d')
-    x = np.arange(avg_matrix.shape[0])
-    y = np.arange(avg_matrix.shape[1])
-    x, y = np.meshgrid(x, y)
-
-    z = avg_matrix.flatten()
-
-    ax3.bar3d(x.flatten(), y.flatten(), np.zeros_like(z), 1, 1, z, shade=True)
-    ax3.set_title('Transition Matrix')
-    ax3.set_xlabel('Current Pixel Intensity')
-    ax3.set_ylabel('Next Pixel Intensity')
-    ax3.set_zlabel('Probability')
     plt.tight_layout()
     plt.show()
 
+def plot_markov_entropy_3d(segments, segment_size):
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection='3d')
 
+    entropy_values = []
+
+    for segment in segments:
+        entropy_values.append(markov_entropy(segment))
+
+    x_vals = np.arange(0, image.shape[1], segment_size)
+    y_vals = np.arange(0, image.shape[0], segment_size)
+    x_vals, y_vals = np.meshgrid(x_vals, y_vals)
+
+    x_vals_flat = x_vals.flatten()
+    y_vals_flat = y_vals.flatten()
+
+    ax.bar3d(x_vals_flat, y_vals_flat, np.zeros_like(entropy_values), segment_size, segment_size, entropy_values, shade=True, color='purple')
+
+    ax.set_title('Markov Entropy for Image Segments')
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+    ax.set_zlabel('Entropy Value')
+
+    plt.show()
+
+
+segment_size = 64
 image = cv2.imread('images/I23.BMP')
-
 height, width, channels = image.shape
-segments = segment_image_no_overlap(image, 64)
+segments = segment_image_no_overlap(image, segment_size)
 
 probs = get_probs(image, width, height)
 entropy = shanon_entropy(probs)
@@ -223,8 +215,7 @@ for i in segments:
 
     partial_sh_entropy += shanon_entropy(get_probs(i, 64, 64))
     partial_hly_entropy += hartley_entropy(i)
-    if cnt != 0:
-        matrix_temp += markov_process(i)
+
     cnt = cnt + 1
 
 partial_sh_entropy = partial_sh_entropy / (len(segments))
@@ -234,6 +225,11 @@ my_array = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_ent
 hist = get_histogram(image)
 
 transition_matrix = markov_process(image)
-plot_combined_3d(my_array, transition_matrix, matrix_temp)
 
-print((markov_entropy(image)))
+
+entropy_values = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy, markov_entropy(image)]
+
+plot_single_entropy_chart(entropy_values)
+plot_markov_entropy_3d(segments, segment_size)
+
+
