@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
+
 import matplotlib.pyplot as plt
 import math as m
+import NoiseGenerator as generator
 
 
 def segment_image_no_overlap(image, segment_size):
@@ -33,131 +35,6 @@ def get_histogram(image):
     return hist
 
 
-def get_probs(image, w, h):
-    total_cnt = 0
-    red_cnt = 0
-    blue_cnt = 0
-    green_cnt = 0
-    yellow_cnt = 0
-    white_cnt = 0
-    other_color = 0
-
-    for x in range(h):
-        for y in range(w):
-            total_cnt += 1.0
-            b, g, r = image[x, y]
-            r = int(r)
-            b = int(b)
-            g = int(g)
-            if r > g + 30 and r > b + 30:
-                red_cnt += 1.0
-            if b > r + 30 and b > g + 30:
-                blue_cnt += 1.0
-            if g > r + 30 and g > b + 30:
-                green_cnt += 1.0
-            if r > 150 and g > 150 and b < 100:
-                yellow_cnt += 1.0
-            if r > 200 and g > 200 and b > 200:
-                white_cnt += 0.1
-            else:
-                other_color += 1.0
-    N = 3
-    p1 = round(red_cnt / total_cnt, N)
-    p2 = round(blue_cnt / total_cnt, N)
-    p3 = round(green_cnt / total_cnt, N)
-    p4 = round(yellow_cnt / total_cnt, N)
-    p5 = round(white_cnt / total_cnt, N)
-    p6 = round(other_color / total_cnt, N)
-
-    return [p1, p2, p3, p4, p5, p6]
-
-
-def shanon_entropy(probs):
-    final_value = 0
-    for p in probs:
-        if p > 0:
-            final_value += p * m.log(p, 2)
-    return -final_value
-
-
-def hartley_entropy(img):
-    # Convert image to grayscale (if it's not already)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 'L' mode is for grayscale in PIL
-
-    # Convert image to numpy array
-    img_array = np.array(img)
-
-    # Count unique grayscale values
-    unique_colors = np.unique(img_array)
-
-    # Number of unique grayscale values
-    num_unique_colors = unique_colors.shape[0]
-
-    # Hartley entropy
-    if num_unique_colors > 0:
-        H0 = m.log2(num_unique_colors)
-    else:
-        H0 = 0
-
-    return H0
-
-
-def markov_process(img):
-    img_array = np.array(img)
-
-    if len(img_array.shape) == 3:
-        img_array = np.mean(img_array, axis=2).astype(int)
-
-    max_value = img_array.max()
-    transition_matrix = np.zeros((max_value + 1, max_value + 1))
-
-    for i in range(img_array.shape[0]):
-        for j in range(img_array.shape[1] - 1):
-            current_pixel = img_array[i, j]
-            next_pixel = img_array[i, j + 1]
-            transition_matrix[current_pixel, next_pixel] += 1
-
-    row_sums = transition_matrix.sum(axis=1)
-    if row_sums.all() != 0:
-        transition_matrix = transition_matrix / row_sums[:, np.newaxis]
-
-    transition_matrix = np.nan_to_num(transition_matrix)
-
-    return transition_matrix
-
-# First-order Markov Process Calculation
-def markov_entropy(image_channel):
-    # Create a 256x256 transition matrix (for pixels 0-255)
-    transition_matrix = np.zeros((256, 256), dtype=int)
-
-    # Find transitions between pixels
-    pixel_values = image_channel.flatten()
-    for i in range(len(pixel_values) - 1):
-        current_pixel = pixel_values[i]
-        next_pixel = pixel_values[i + 1]
-        transition_matrix[current_pixel, next_pixel] += 1
-
-    # Normalize the transition matrix
-    transition_matrix = transition_matrix / np.sum(transition_matrix)
-
-    # Calculate the entropy for the process
-    entropy_value = 0
-    for row in transition_matrix:
-        for transition in row:
-            if transition > 0:
-                entropy_value -= transition * np.log2(transition)
-
-    return entropy_value
-
-def calculate_entropy(transition_matrix):
-    entropy = 0
-    for row in transition_matrix:
-        # Remove zero probabilities to avoid log(0)
-        non_zero_probs = row[row > 0]
-        entropy += -np.sum(non_zero_probs * np.log2(non_zero_probs))
-
-    return entropy
-
 def plot_single_entropy_chart(entropy_values):
     fig = plt.figure(figsize=(10, 6))
 
@@ -174,62 +51,152 @@ def plot_single_entropy_chart(entropy_values):
     plt.tight_layout()
     plt.show()
 
-def plot_markov_entropy_3d(segments, segment_size):
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection='3d')
 
-    entropy_values = []
-
-    for segment in segments:
-        entropy_values.append(markov_entropy(segment))
-
-    x_vals = np.arange(0, image.shape[1], segment_size)
-    y_vals = np.arange(0, image.shape[0], segment_size)
-    x_vals, y_vals = np.meshgrid(x_vals, y_vals)
-
-    x_vals_flat = x_vals.flatten()
-    y_vals_flat = y_vals.flatten()
-
-    ax.bar3d(x_vals_flat, y_vals_flat, np.zeros_like(entropy_values), segment_size, segment_size, entropy_values, shade=True, color='purple')
-
-    ax.set_title('Markov Entropy for Image Segments')
-    ax.set_xlabel('X Coordinate')
-    ax.set_ylabel('Y Coordinate')
-    ax.set_zlabel('Entropy Value')
-
-    plt.show()
+def count_data_size(img_h, img_w):
+    return img_h * img_w * 3 * 8
 
 
-segment_size = 64
+def count_different_pixels(image1, image2):
+    if image1.dtype != image2.dtype:
+        image2 = image2.astype(image1.dtype)  #
+    # Since the images are guaranteed to be the same size, we can directly compute the difference
+    diff = cv2.absdiff(image1, image2)
+
+    # Convert the difference image to grayscale
+    gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+    # Count the number of non-zero pixels (different pixels)
+    num_diff_pixels = np.count_nonzero(gray_diff)
+
+    return num_diff_pixels
+
+
+def mean_sq_deviation(image1, image2):
+    # Ensure both images have the same data type
+    if image1.dtype != image2.dtype:
+        image2 = image2.astype(image1.dtype)
+
+    # Compute the difference between the two images
+    diff = cv2.absdiff(image1, image2)
+
+    # Convert the difference to grayscale if necessary (depends on your use case)
+    # If you want to compute MSE for color images, you can skip this step.
+    gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+    # Compute the squared differences
+    squared_diff = np.square(diff)
+
+    # Compute the mean of the squared differences
+    mse = np.mean(squared_diff)
+
+    return mse
+
+def normalized_correlation(image1, image2):
+    # Ensure both images have the same size and data type
+    if image1.shape != image2.shape:
+        raise ValueError("Images must have the same dimensions.")
+    if image1.dtype != image2.dtype:
+        image2 = image2.astype(image1.dtype)
+
+    # Flatten the images into 1D arrays
+    img1_flat = image1.flatten()
+    img2_flat = image2.flatten()
+
+    # Compute the means of the images
+    mean_img1 = np.mean(img1_flat)
+    mean_img2 = np.mean(img2_flat)
+
+    # Subtract the mean from the images (center them)
+    img1_centered = img1_flat - mean_img1
+    img2_centered = img2_flat - mean_img2
+
+    # Calculate the numerator (sum of the element-wise product of the centered images)
+    numerator = np.sum(img1_centered * img2_centered)
+
+    # Calculate the denominator (product of the square roots of the sum of squares)
+    denominator = np.sqrt(np.sum(img1_centered ** 2) * np.sum(img2_centered ** 2))
+
+    # Calculate the normalized correlation coefficient
+    if denominator == 0:
+        return 0  # Avoid division by zero
+    else:
+        correlation_coefficient = numerator / denominator
+
+    return correlation_coefficient
+
+
+def calculate_psnr(image1, image2):
+    """Calculate PSNR (Peak Signal-to-Noise Ratio) between two images."""
+    mse = mean_sq_deviation(image1, image2)
+
+    # If MSE is zero, the images are identical, and PSNR is infinite
+    if mse == 0:
+        return float('inf')
+
+    # Maximum possible pixel value of the image
+    max_pixel_value = 255.0
+
+    # Compute PSNR
+    psnr = 10 * np.log10((max_pixel_value ** 2) / mse)
+    return psnr
+# CODE FOR TASK 3
+
 image = cv2.imread('images/I23.BMP')
 height, width, channels = image.shape
-segments = segment_image_no_overlap(image, segment_size)
 
-probs = get_probs(image, width, height)
-entropy = shanon_entropy(probs)
-partial_sh_entropy = 0
-partial_hly_entropy = 0
-matrix_temp = markov_process(segments[0])
-cnt = 0
-for i in segments:
+distorted_image_gauss = generator.noisy(generator.GAUSS_NOISE, image)
+# distorted_image_snp = generator.noisy(generator.SALT_AND_PEPPER, image)
+distorted_image_poisson = generator.noisy(generator.POISSON, image)
+distorted_image_speckle = generator.noisy(generator.SPECKLE, image)
 
-    partial_sh_entropy += shanon_entropy(get_probs(i, 64, 64))
-    partial_hly_entropy += hartley_entropy(i)
+# Diagram 1
+erroneous_pixels_gauss = count_different_pixels(image, distorted_image_gauss)
+erroneous_pixels_poisson = count_different_pixels(image, distorted_image_poisson)
+erroneous_pixels_speckle = count_different_pixels(image, distorted_image_speckle)
 
-    cnt = cnt + 1
-
-partial_sh_entropy = partial_sh_entropy / (len(segments))
-partial_hly_entropy = partial_hly_entropy / len(segments)
-matrix_temp = matrix_temp / len(segments)
-my_array = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy]
-hist = get_histogram(image)
-
-transition_matrix = markov_process(image)
+amount_of_pixels = width * height
+# Diagram 1
 
 
-entropy_values = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy, markov_entropy(image)]
+# Diagram 2
+gauss_error = (erroneous_pixels_gauss / amount_of_pixels)
+poisson_error = (erroneous_pixels_poisson / amount_of_pixels)
+speckle_error = (erroneous_pixels_speckle / amount_of_pixels)
+# Diagram 2
 
-plot_single_entropy_chart(entropy_values)
-plot_markov_entropy_3d(segments, segment_size)
+print("Gauss Error ", gauss_error)
+print("Poisson Error ", poisson_error)
+print("Speckle Error ", speckle_error)
 
 
+
+#Diagram 3
+gauss_error_mean = mean_sq_deviation(image, distorted_image_gauss)
+poisson_error_mean = mean_sq_deviation(image, distorted_image_poisson)
+speckle_error_mean = mean_sq_deviation(image, distorted_image_speckle)
+#Diagram 3
+
+#Diagram 4
+psnr_gauss   = calculate_psnr(image, distorted_image_gauss)
+psnr_poisson = calculate_psnr(image,distorted_image_poisson)
+psnr_speckle = calculate_psnr(image,distorted_image_speckle)
+#Diagram 4
+
+#Diagram 5
+net_speed = 50 * pow(10, 6)
+
+data_size = count_data_size(height, width)
+transfer_time = data_size / net_speed
+
+print(data_size, "Bytes")
+print(transfer_time, "s")
+
+#Diagram 5
+cv2.imshow('gauss img', distorted_image_gauss)
+# cv2.imshow('snp img', distorted_image_snp)
+cv2.imshow('poisson img', distorted_image_poisson)
+cv2.imshow('speckle img', distorted_image_speckle)
+
+cv2.waitKey(0)
+
+# CODE FOR TASK 3
