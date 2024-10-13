@@ -255,9 +255,9 @@ mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, spe
 
 
 #Diagram 4
-psnr_gauss   = 0.7*calculate_psnr(image, distorted_image_gauss)
-psnr_poisson = 0.9*calculate_psnr(image, distorted_image_poisson)
-psnr_speckle = 0.7*calculate_psnr(image, distorted_image_speckle)
+psnr_gauss   = calculate_psnr(image, distorted_image_gauss)
+psnr_poisson = calculate_psnr(image, distorted_image_poisson)
+psnr_speckle = calculate_psnr(image, distorted_image_speckle)
 
 psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle)
 #Diagram 4
