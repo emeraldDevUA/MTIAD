@@ -13,7 +13,7 @@ def noisy(noise_typ, image):
     if noise_typ == "gauss":
         row, col, ch = image.shape
         mean = 0
-        var = 0.1
+        var = 0.8
         sigma = var ** 0.5
 
         gauss = np.random.normal(mean, sigma, (row, col, ch))

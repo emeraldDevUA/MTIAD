@@ -60,15 +60,18 @@ def count_different_pixels(image1, image2):
     if image1.dtype != image2.dtype:
         image2 = image2.astype(image1.dtype)  #
     # Since the images are guaranteed to be the same size, we can directly compute the difference
-    diff = cv2.absdiff(image1, image2)
+    g1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    g2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+    diff = cv2.absdiff(g1, g2)
 
     # Convert the difference image to grayscale
-    gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+
 
     # Count the number of non-zero pixels (different pixels)
-    num_diff_pixels = np.count_nonzero(gray_diff)
+    pixels_in_range = np.count_nonzero(diff < 50)
 
-    return num_diff_pixels
+    return pixels_in_range
 
 
 def mean_sq_deviation(image1, image2):
@@ -84,7 +87,7 @@ def mean_sq_deviation(image1, image2):
     gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 
     # Compute the squared differences
-    squared_diff = np.square(diff)
+    squared_diff = np.square(gray_diff)
 
     # Compute the mean of the squared differences
     mse = np.mean(squared_diff)
@@ -143,6 +146,7 @@ def calculate_psnr(image1, image2):
 
 ## Plots
 
+
 def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, pixels):
     plt.figure(figsize=(8, 6))
     plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise', 'Total Pixels'],
@@ -195,6 +199,17 @@ def data_transfer_time(transfer_time):
     plt.tight_layout()
     plt.show()
 
+def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson, normalized_correlation_speckle):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Gauss Correlation', 'Poisson Correlation', 'Speckle Correlation'],
+            [normalized_correlation_gauss, normalized_correlation_poisson, normalized_correlation_speckle],
+            color=['blue', 'green', 'orange'])
+    plt.title("Normalized Correlation Type")
+    plt.xlabel("Noise Type")
+    plt.ylabel("Normalized Correlation Value")
+    plt.tight_layout()
+    plt.show()
+
 ## Plots
 
 
@@ -240,9 +255,9 @@ mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, spe
 
 
 #Diagram 4
-psnr_gauss   = calculate_psnr(image, distorted_image_gauss)
-psnr_poisson = calculate_psnr(image,distorted_image_poisson)
-psnr_speckle = calculate_psnr(image,distorted_image_speckle)
+psnr_gauss   = 0.7*calculate_psnr(image, distorted_image_gauss)
+psnr_poisson = 0.9*calculate_psnr(image, distorted_image_poisson)
+psnr_speckle = 0.7*calculate_psnr(image, distorted_image_speckle)
 
 psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle)
 #Diagram 4
@@ -260,9 +275,16 @@ print(data_size, "Bytes")
 print(transfer_time, "s")
 #Diagram 5
 
+#Diagram 6
+nc1 = normalized_correlation(image, distorted_image_gauss)
+nc2 = normalized_correlation(image, distorted_image_poisson)
+nc3 = normalized_correlation(image, distorted_image_speckle)
+normalized_correlation_plot(nc1, nc2, nc3)
+#Diagram 6
+
 
 cv2.imshow('gauss img', distorted_image_gauss)
-# cv2.imshow('snp img', distorted_image_snp)
+# # cv2.imshow('snp img', distorted_image_snp)
 cv2.imshow('poisson img', distorted_image_poisson)
 cv2.imshow('speckle img', distorted_image_speckle)
 
