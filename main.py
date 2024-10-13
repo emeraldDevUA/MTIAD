@@ -141,6 +141,63 @@ def calculate_psnr(image1, image2):
     return psnr
 # CODE FOR TASK 3
 
+## Plots
+
+def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
+            [erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle],
+            color=['blue', 'green', 'orange'])
+    plt.title("Number of Erroneous Pixels")
+    plt.xlabel("Noise Type")
+    plt.ylabel("Number of Erroneous Pixels")
+    plt.tight_layout()
+    plt.show()
+
+def error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
+            [gauss_error * 100, poisson_error * 100, speckle_error * 100],
+            color=['blue', 'green', 'orange'])
+    plt.title("Error Percentage per Noise Type")
+    plt.xlabel("Noise Type")
+    plt.ylabel("Error Percentage (%)")
+    plt.tight_layout()
+    plt.show()
+
+def mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, speckle_error_mean):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
+            [gauss_error_mean, poisson_error_mean, speckle_error_mean],
+            color=['blue', 'green', 'orange'])
+    plt.title("Mean Squared Error per Noise Type")
+    plt.xlabel("Noise Type")
+    plt.ylabel("Mean Squared Error")
+    plt.tight_layout()
+    plt.show()
+
+def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
+            [psnr_gauss, psnr_poisson, psnr_speckle],
+            color=['blue', 'green', 'orange'])
+    plt.title("PSNR (Peak Signal-to-Noise Ratio) per Noise Type")
+    plt.xlabel("Noise Type")
+    plt.ylabel("PSNR (dB)")
+    plt.tight_layout()
+    plt.show()
+
+def data_transfer_time(transfer_time):
+    plt.figure(figsize=(8, 6))
+    plt.bar(['Data Transfer'], [transfer_time], color='purple')
+    plt.title("Data Transfer Time")
+    plt.ylabel("Time (s)")
+    plt.tight_layout()
+    plt.show()
+
+## Plots
+
+
 image = cv2.imread('images/I23.BMP')
 height, width, channels = image.shape
 
@@ -155,6 +212,8 @@ erroneous_pixels_poisson = count_different_pixels(image, distorted_image_poisson
 erroneous_pixels_speckle = count_different_pixels(image, distorted_image_speckle)
 
 amount_of_pixels = width * height
+
+number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle)
 # Diagram 1
 
 
@@ -162,25 +221,32 @@ amount_of_pixels = width * height
 gauss_error = (erroneous_pixels_gauss / amount_of_pixels)
 poisson_error = (erroneous_pixels_poisson / amount_of_pixels)
 speckle_error = (erroneous_pixels_speckle / amount_of_pixels)
-# Diagram 2
+
+error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error)
 
 print("Gauss Error ", gauss_error)
 print("Poisson Error ", poisson_error)
 print("Speckle Error ", speckle_error)
-
+# Diagram 2
 
 
 #Diagram 3
 gauss_error_mean = mean_sq_deviation(image, distorted_image_gauss)
 poisson_error_mean = mean_sq_deviation(image, distorted_image_poisson)
 speckle_error_mean = mean_sq_deviation(image, distorted_image_speckle)
+
+mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, speckle_error_mean)
 #Diagram 3
+
 
 #Diagram 4
 psnr_gauss   = calculate_psnr(image, distorted_image_gauss)
 psnr_poisson = calculate_psnr(image,distorted_image_poisson)
 psnr_speckle = calculate_psnr(image,distorted_image_speckle)
+
+psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle)
 #Diagram 4
+
 
 #Diagram 5
 net_speed = 50 * pow(10, 6)
@@ -188,10 +254,13 @@ net_speed = 50 * pow(10, 6)
 data_size = count_data_size(height, width)
 transfer_time = data_size / net_speed
 
+data_transfer_time(transfer_time)
+
 print(data_size, "Bytes")
 print(transfer_time, "s")
-
 #Diagram 5
+
+
 cv2.imshow('gauss img', distorted_image_gauss)
 # cv2.imshow('snp img', distorted_image_snp)
 cv2.imshow('poisson img', distorted_image_poisson)
