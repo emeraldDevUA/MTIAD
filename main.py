@@ -143,11 +143,11 @@ def calculate_psnr(image1, image2):
 
 ## Plots
 
-def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle):
+def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, pixels):
     plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
-            [erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle],
-            color=['blue', 'green', 'orange'])
+    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise', 'Total Pixels'],
+            [erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, pixels],
+            color=['blue', 'green', 'orange', 'red'])
     plt.title("Number of Erroneous Pixels")
     plt.xlabel("Noise Type")
     plt.ylabel("Number of Erroneous Pixels")
@@ -157,7 +157,7 @@ def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poi
 def error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error):
     plt.figure(figsize=(8, 6))
     plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
-            [gauss_error * 100, poisson_error * 100, speckle_error * 100],
+            [gauss_error, poisson_error, speckle_error],
             color=['blue', 'green', 'orange'])
     plt.title("Error Percentage per Noise Type")
     plt.xlabel("Noise Type")
@@ -213,7 +213,7 @@ erroneous_pixels_speckle = count_different_pixels(image, distorted_image_speckle
 
 amount_of_pixels = width * height
 
-number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle)
+number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, amount_of_pixels)
 # Diagram 1
 
 
