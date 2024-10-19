@@ -1,9 +1,8 @@
 import cv2
 import numpy as np
 
+from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
-import math as m
-import NoiseGenerator as generator
 
 
 def segment_image_no_overlap(image, segment_size):
@@ -30,9 +29,6 @@ def segment_image_no_overlap(image, segment_size):
     return segments  # Return the list of segments
 
 
-def get_histogram(image):
-    hist, bins = np.histogram(image.flatten(), 256, [0, 256])
-    return hist
 
 
 def plot_single_entropy_chart(entropy_values):
@@ -52,10 +48,6 @@ def plot_single_entropy_chart(entropy_values):
     plt.show()
 
 
-def count_data_size(img_h, img_w):
-    return img_h * img_w * 3 * 8
-
-
 def count_different_pixels(image1, image2):
     if image1.dtype != image2.dtype:
         image2 = image2.astype(image1.dtype)  #
@@ -65,8 +57,6 @@ def count_different_pixels(image1, image2):
     diff = cv2.absdiff(g1, g2)
 
     # Convert the difference image to grayscale
-
-
 
     # Count the number of non-zero pixels (different pixels)
     pixels_in_range = np.count_nonzero(diff < 50)
@@ -93,6 +83,7 @@ def mean_sq_deviation(image1, image2):
     mse = np.mean(squared_diff)
 
     return mse
+
 
 def normalized_correlation(image1, image2):
     # Ensure both images have the same size and data type
@@ -142,6 +133,8 @@ def calculate_psnr(image1, image2):
     # Compute PSNR
     psnr = 10 * np.log10((max_pixel_value ** 2) / mse)
     return psnr
+
+
 # CODE FOR TASK 3
 
 ## Plots
@@ -158,6 +151,7 @@ def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poi
     plt.tight_layout()
     plt.show()
 
+
 def error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error):
     plt.figure(figsize=(8, 6))
     plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
@@ -168,6 +162,7 @@ def error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_err
     plt.ylabel("Error Percentage (%)")
     plt.tight_layout()
     plt.show()
+
 
 def mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, speckle_error_mean):
     plt.figure(figsize=(8, 6))
@@ -180,6 +175,7 @@ def mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean,
     plt.tight_layout()
     plt.show()
 
+
 def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
     plt.figure(figsize=(8, 6))
     plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
@@ -191,6 +187,7 @@ def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
     plt.tight_layout()
     plt.show()
 
+
 def data_transfer_time(transfer_time):
     plt.figure(figsize=(8, 6))
     plt.bar(['Data Transfer'], [transfer_time], color='purple')
@@ -199,7 +196,9 @@ def data_transfer_time(transfer_time):
     plt.tight_layout()
     plt.show()
 
-def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson, normalized_correlation_speckle):
+
+def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson,
+                                normalized_correlation_speckle):
     plt.figure(figsize=(8, 6))
     plt.bar(['Gauss Correlation', 'Poisson Correlation', 'Speckle Correlation'],
             [normalized_correlation_gauss, normalized_correlation_poisson, normalized_correlation_speckle],
@@ -210,84 +209,148 @@ def normalized_correlation_plot(normalized_correlation_gauss, normalized_correla
     plt.tight_layout()
     plt.show()
 
+
+def calculate_entropy(image):
+    # Convert the image to grayscale if it's not already
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Flatten the image to a 1D array of pixel values
+    pixel_values = image.flatten()
+
+    # Get the histogram of pixel values
+    histogram, bin_edges = np.histogram(pixel_values, bins=256, range=(0, 256), density=True)
+
+    # Filter out zero probabilities to avoid log(0)
+    histogram = histogram[histogram > 0]
+
+    # Compute entropy using the Shannon formula
+    entropy = -np.sum(histogram * np.log2(histogram))
+
+    return entropy
+
+
+def mean_arithmetical_expectation(image):
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    pixel_values = image.flatten()
+    sum_value = np.sum(pixel_values)
+
+    return sum_value / len(pixel_values)
+
+
+def mean_squared_deviation(image, expectation):
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    pixels = image.flatten()
+    # Calculate the mean squared deviation
+    return np.mean(np.square(pixels - expectation))
+
+
+def entropy_to_color(entropy, min_entropy, max_entropy):
+    # Normalize entropy between 0 and 1
+    normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
+
+    # Convert to color using a colormap (plt.cm)
+    colormap = plt.cm.viridis  # Use 'viridis' or other colormaps like 'plasma', 'coolwarm'
+    color = colormap(normalized)  # Returns a tuple (R, G, B, A)
+
+    # Convert to RGB 0-255 scale
+    return tuple([int(255 * c) for c in color[:3]])
+
+
+# Function to reconstruct the image
+def reconstruct_image(entropies, n, image_size, image_name):
+    # Create an empty image
+    restored_image = Image.new('RGB', image_size)
+    draw = ImageDraw.Draw(restored_image)
+
+    try:
+        font = ImageFont.truetype("res/Montserrat-Bold.ttf", 50)  # You can adjust the font size
+    except IOError:
+        font = ImageFont.load_default()
+
+
+    # Get the minimum and maximum entropy for color scaling
+    min_entropy = np.min(entropies)
+    max_entropy = np.max(entropies)
+
+    # Number of segments along the width and height
+    num_segments_x = image_size[0] // n
+    num_segments_y = image_size[1] // n
+
+    # Loop over each segment and paste it onto the restored image
+    for i in range(num_segments_y):
+        for j in range(num_segments_x):
+            # Get the segment index
+            idx = i * num_segments_x + j
+
+            # Get the entropy for this segment
+            entropy = entropies[idx]
+
+            # Get the color for this entropy value
+            color = entropy_to_color(entropy, min_entropy, max_entropy)
+
+            # Draw the n x n block with the corresponding color
+            draw.rectangle([j * n, i * n, (j + 1) * n, (i + 1) * n], fill=color)
+
+    text_position = (0, image_size[1] - 100)
+    draw.text(text_position, image_name, fill=(0, 0, 0), font=font)
+    return restored_image
+
+
+def count_distribution(entropies):
+    class_a = 0
+    class_b = 0
+    class_c = 0
+
+    min_entropy = np.min(entropies)
+    max_entropy = np.max(entropies)
+    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
+    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
+    for (value) in entropies:
+        if value < minus_sigma_value:
+            class_a += 1
+        elif value > plus_sigma_value:
+            class_c += 1
+        else:
+            class_b += 1
+    return [class_a, class_b, class_c]
+
+
 ## Plots
 
-
-image = cv2.imread('images/I23.BMP')
+image = cv2.imread('images/MIG29.jpg')
 height, width, channels = image.shape
 
-distorted_image_gauss = generator.noisy(generator.GAUSS_NOISE, image)
-# distorted_image_snp = generator.noisy(generator.SALT_AND_PEPPER, image)
-distorted_image_poisson = generator.noisy(generator.POISSON, image)
-distorted_image_speckle = generator.noisy(generator.SPECKLE, image)
-
-# Diagram 1
-erroneous_pixels_gauss = count_different_pixels(image, distorted_image_gauss)
-erroneous_pixels_poisson = count_different_pixels(image, distorted_image_poisson)
-erroneous_pixels_speckle = count_different_pixels(image, distorted_image_speckle)
-
-amount_of_pixels = width * height
-
-number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, amount_of_pixels)
-# Diagram 1
+# CODE FOR TASK 4
 
 
-# Diagram 2
-gauss_error = (erroneous_pixels_gauss / amount_of_pixels)
-poisson_error = (erroneous_pixels_poisson / amount_of_pixels)
-speckle_error = (erroneous_pixels_speckle / amount_of_pixels)
+segment_array = segment_image_no_overlap(image, 16)
+segment_entropies = []
+mean_sq_dev = []
+norm_correlation = []
 
-error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error)
+for i in range(len(segment_array) - 1):
+    norm_correlation.append(normalized_correlation(segment_array[i], segment_array[i + 1]))
 
-print("Gauss Error ", gauss_error)
-print("Poisson Error ", poisson_error)
-print("Speckle Error ", speckle_error)
-# Diagram 2
+norm_correlation.append(0)
+for (segment) in segment_array:
+    segment_entropies.append(calculate_entropy(segment))
+    mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
 
+# DIAGRAM 1
+entropy_classification = count_distribution(segment_entropies)
+mean_sq_dev_classification = count_distribution(mean_sq_dev)
+norm_correlation_classification = count_distribution(norm_correlation)
+# DIAGRAM 1
 
-#Diagram 3
-gauss_error_mean = mean_sq_deviation(image, distorted_image_gauss)
-poisson_error_mean = mean_sq_deviation(image, distorted_image_poisson)
-speckle_error_mean = mean_sq_deviation(image, distorted_image_speckle)
+entropy_img = reconstruct_image(entropies=segment_entropies, n=16, image_size=(width, height), image_name="Entropy Image Reconstruction")
+mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=16, image_size=(width, height), image_name="MSD Image Reconstruction")
+norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=16, image_size=(width, height), image_name="NC Image Reconstruction")
 
-mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, speckle_error_mean)
-#Diagram 3
+entropy_img.show("Entropy Image Reconstruction")
+mean_sq_img.show("MSD Image Reconstruction")
+norm_correlation_img.show("NC Image Reconstruction")
 
-
-#Diagram 4
-psnr_gauss   = calculate_psnr(image, distorted_image_gauss)
-psnr_poisson = calculate_psnr(image, distorted_image_poisson)
-psnr_speckle = calculate_psnr(image, distorted_image_speckle)
-
-psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle)
-#Diagram 4
-
-
-#Diagram 5
-net_speed = 50 * pow(10, 6)
-
-data_size = count_data_size(height, width)
-transfer_time = data_size / net_speed
-
-data_transfer_time(transfer_time)
-
-print(data_size, "Bytes")
-print(transfer_time, "s")
-#Diagram 5
-
-#Diagram 6
-nc1 = normalized_correlation(image, distorted_image_gauss)
-nc2 = normalized_correlation(image, distorted_image_poisson)
-nc3 = normalized_correlation(image, distorted_image_speckle)
-normalized_correlation_plot(nc1, nc2, nc3)
-#Diagram 6
-
-
-cv2.imshow('gauss img', distorted_image_gauss)
-# # cv2.imshow('snp img', distorted_image_snp)
-cv2.imshow('poisson img', distorted_image_poisson)
-cv2.imshow('speckle img', distorted_image_speckle)
-
-cv2.waitKey(0)
-
-# CODE FOR TASK 3
+# CODE FOR TASK 4
