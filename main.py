@@ -188,13 +188,6 @@ def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
     plt.show()
 
 
-def data_transfer_time(transfer_time):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Data Transfer'], [transfer_time], color='purple')
-    plt.title("Data Transfer Time")
-    plt.ylabel("Time (s)")
-    plt.tight_layout()
-    plt.show()
 
 
 def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson,
@@ -319,8 +312,9 @@ def count_distribution(entropies):
 
 
 ## Plots
+file_name = 'F-16'
 
-image = cv2.imread('images/MIG29.jpg')
+image = cv2.imread(f'images/{file_name}.bmp')
 height, width, channels = image.shape
 
 # CODE FOR TASK 4
@@ -353,4 +347,7 @@ entropy_img.show("Entropy Image Reconstruction")
 mean_sq_img.show("MSD Image Reconstruction")
 norm_correlation_img.show("NC Image Reconstruction")
 
+entropy_img.save(f'saves/entropy_{file_name}.bmp')
+mean_sq_img.save(f'saves/msd_{file_name}.bmp')
+norm_correlation_img.save(f'saves/nc_{file_name}.bmp')
 # CODE FOR TASK 4
