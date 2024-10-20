@@ -293,11 +293,14 @@ def get_variable_thresholds(entropies):
     mean_entropy = np.mean(entropies)
     std_entropy = np.std(entropies)
 
-    minus_sigma_value = mean_entropy - 0.25 * std_entropy
+    minus_sigma_value = mean_entropy - 1 * std_entropy
 
-    plus_sigma_value = mean_entropy + 0.25 * std_entropy
+    plus_sigma_value = mean_entropy + 1 * std_entropy
     if minus_sigma_value <= 0:
         minus_sigma_value = plus_sigma_value/5
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies)*0.8
+
 
     return [minus_sigma_value, plus_sigma_value, np.min(entropies), np.max(entropies)]
 
@@ -310,11 +313,13 @@ def count_distribution(entropies):
     mean_entropy = np.mean(entropies)
     std_entropy = np.std(entropies)
 
-    minus_sigma_value = mean_entropy - 0.25 * std_entropy
-    plus_sigma_value = mean_entropy + 0.25 * std_entropy
+    minus_sigma_value = mean_entropy - 1 * std_entropy
+    plus_sigma_value = mean_entropy + 1 * std_entropy
 
     if minus_sigma_value <= 0:
         minus_sigma_value = plus_sigma_value / 5
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies) * 0.8
 
     for (value) in entropies:
         if value < minus_sigma_value:
@@ -388,7 +393,7 @@ color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[2], entropy_
 entropy_thresholds = [entropy_thresholds[0], entropy_thresholds[1]]
 
 classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class',
-                    'Number of Segments', [color1, color2])
+                    'Threshold Value', [color1, color2])
 # DIAGRAM 4
 
 # DIAGRAM 5
@@ -399,7 +404,7 @@ color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[2], 
 mean_sq_dev_thresholds = [mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1]]
 
 classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold',
-                    'MSD Class', 'Number of Segments', color=[color3, color4])
+                    'MSD Class', 'Threshold Value', color=[color3, color4])
 # DIAGRAM 5
 
 # DIAGRAM 6
@@ -411,7 +416,7 @@ color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thres
                           norm_correlation_thresholds[3], True)
 norm_correlation_thresholds = [norm_correlation_thresholds[0], norm_correlation_thresholds[1]]
 classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold',
-                    'NC Class', 'Number of Segments', color=[color5, color6])
+                    'NC Class', 'Threshold Value', color=[color5, color6])
 # DIAGRAM 6
 
 
