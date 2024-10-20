@@ -292,6 +292,12 @@ def reconstruct_image(entropies, n, image_size, image_name):
     return restored_image
 
 
+def get_variable_thresholds(entropies):
+    min_entropy = np.min(entropies)
+    max_entropy = np.max(entropies)
+    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
+    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
+    return [minus_sigma_value, plus_sigma_value]
 def count_distribution(entropies):
     class_a = 0
     class_b = 0
@@ -338,6 +344,24 @@ entropy_classification = count_distribution(segment_entropies)
 mean_sq_dev_classification = count_distribution(mean_sq_dev)
 norm_correlation_classification = count_distribution(norm_correlation)
 # DIAGRAM 1
+
+# DIAGRAM 2
+entropy_thresholds = get_variable_thresholds(segment_entropies)
+
+color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1])
+color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1])
+
+mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
+
+color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
+color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
+
+norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
+
+color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
+color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
+# DIAGRAM 2
+
 
 entropy_img = reconstruct_image(entropies=segment_entropies, n=16, image_size=(width, height), image_name="Entropy Image Reconstruction")
 mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=16, image_size=(width, height), image_name="MSD Image Reconstruction")
