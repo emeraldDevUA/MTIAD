@@ -28,7 +28,7 @@ def segment_image_no_overlap(image, segment_size):
 
     return segments  # Return the list of segments
 
-
+# CODE FOR TASK 4
 def normalized_correlation(image1, image2):
     # Ensure both images have the same size and data type
     if image1.shape != image2.shape:
@@ -141,7 +141,6 @@ def count_distribution(entropies):
 
     return [class_a, class_b, class_c]
 
-# CODE FOR TASK 4
 
 
 
