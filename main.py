@@ -29,8 +29,6 @@ def segment_image_no_overlap(image, segment_size):
     return segments  # Return the list of segments
 
 
-
-
 def plot_single_entropy_chart(entropy_values):
     fig = plt.figure(figsize=(10, 6))
 
@@ -188,8 +186,6 @@ def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
     plt.show()
 
 
-
-
 def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson,
                                 normalized_correlation_speckle):
     plt.figure(figsize=(8, 6))
@@ -265,7 +261,6 @@ def reconstruct_image(entropies, n, image_size, image_name):
     except IOError:
         font = ImageFont.load_default()
 
-
     # Get the minimum and maximum entropy for color scaling
     min_entropy = np.min(entropies)
     max_entropy = np.max(entropies)
@@ -295,20 +290,32 @@ def reconstruct_image(entropies, n, image_size, image_name):
 
 
 def get_variable_thresholds(entropies):
-    min_entropy = np.min(entropies)
-    max_entropy = np.max(entropies)
-    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
-    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
-    return [minus_sigma_value, plus_sigma_value]
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 0.25 * std_entropy
+
+    plus_sigma_value = mean_entropy + 0.25 * std_entropy
+    if minus_sigma_value <= 0:
+        minus_sigma_value = plus_sigma_value/5
+
+    return [minus_sigma_value, plus_sigma_value, np.min(entropies), np.max(entropies)]
+
+
 def count_distribution(entropies):
     class_a = 0
     class_b = 0
     class_c = 0
 
-    min_entropy = np.min(entropies)
-    max_entropy = np.max(entropies)
-    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
-    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 0.25 * std_entropy
+    plus_sigma_value = mean_entropy + 0.25 * std_entropy
+
+    if minus_sigma_value <= 0:
+        minus_sigma_value = plus_sigma_value / 5
+
     for (value) in entropies:
         if value < minus_sigma_value:
             class_a += 1
@@ -316,6 +323,7 @@ def count_distribution(entropies):
             class_c += 1
         else:
             class_b += 1
+
     return [class_a, class_b, class_c]
 
 
@@ -342,6 +350,7 @@ for (segment) in segment_array:
     segment_entropies.append(calculate_entropy(segment))
     mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
 
+
 # Plots
 def classification_plot(bars, values, title, xlabel, ylabel, color=['blue', 'green', 'orange']):
     plt.figure(figsize=(8, 6))
@@ -353,6 +362,8 @@ def classification_plot(bars, values, title, xlabel, ylabel, color=['blue', 'gre
     plt.ylabel(ylabel)
     plt.tight_layout()
     plt.show()
+
+
 # Plots
 
 # DIAGRAM 1 - 3
@@ -360,43 +371,56 @@ entropy_classification = count_distribution(segment_entropies)
 mean_sq_dev_classification = count_distribution(mean_sq_dev)
 norm_correlation_classification = count_distribution(norm_correlation)
 
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], entropy_classification, 'Entropy Classification', 'Entropy Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], mean_sq_dev_classification, 'Mean Squared Deviation Classification', 'MSD Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], norm_correlation_classification, 'Normalized Correlation Classification', 'NC Class', 'Number of Segments')
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], entropy_classification,
+                    'Entropy Classification', 'Entropy Class', 'Number of Segments')
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], mean_sq_dev_classification,
+                    'Mean Squared Deviation Classification', 'MSD Class', 'Number of Segments')
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], norm_correlation_classification,
+                    'Normalized Correlation Classification', 'NC Class', 'Number of Segments')
 
 # DIAGRAM 1 - 3
 
 # DIAGRAM 4
 entropy_thresholds = get_variable_thresholds(segment_entropies)
 
-color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1], True)
-color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1], True)
+color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[2], entropy_thresholds[3], True)
+color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[2], entropy_thresholds[3], True)
+entropy_thresholds = [entropy_thresholds[0], entropy_thresholds[1]]
 
-classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class', 'Number of Segments',[color1, color2])
+classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class',
+                    'Number of Segments', [color1, color2])
 # DIAGRAM 4
 
 # DIAGRAM 5
 mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
 
-color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
-color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
+color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[2], mean_sq_dev_thresholds[3], True)
+color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[2], mean_sq_dev_thresholds[3], True)
+mean_sq_dev_thresholds = [mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1]]
 
-classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold', 'MSD Class', 'Number of Segments', color=[color3, color4])
+classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold',
+                    'MSD Class', 'Number of Segments', color=[color3, color4])
 # DIAGRAM 5
 
 # DIAGRAM 6
 norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
 
-color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
-color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
-
-classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold', 'NC Class', 'Number of Segments', color=["green", "red"])
+color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[2],
+                          norm_correlation_thresholds[3], True)
+color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[2],
+                          norm_correlation_thresholds[3], True)
+norm_correlation_thresholds = [norm_correlation_thresholds[0], norm_correlation_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold',
+                    'NC Class', 'Number of Segments', color=[color5, color6])
 # DIAGRAM 6
 
 
-entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height), image_name="Entropy Image Reconstruction")
-mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=segment_size, image_size=(width, height), image_name="MSD Image Reconstruction")
-norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=segment_size, image_size=(width, height), image_name="NC Image Reconstruction")
+entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height),
+                                image_name="Entropy Image Reconstruction")
+mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=segment_size, image_size=(width, height),
+                                image_name="MSD Image Reconstruction")
+norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=segment_size, image_size=(width, height),
+                                         image_name="NC Image Reconstruction")
 
 entropy_img.show("Entropy Image Reconstruction")
 mean_sq_img.show("MSD Image Reconstruction")
