@@ -324,9 +324,9 @@ image = cv2.imread(f'images/{file_name}.bmp')
 height, width, channels = image.shape
 
 # CODE FOR TASK 4
+segment_size = 2
 
-
-segment_array = segment_image_no_overlap(image, 16)
+segment_array = segment_image_no_overlap(image, segment_size)
 segment_entropies = []
 mean_sq_dev = []
 norm_correlation = []
@@ -363,9 +363,9 @@ color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thres
 # DIAGRAM 2
 
 
-entropy_img = reconstruct_image(entropies=segment_entropies, n=16, image_size=(width, height), image_name="Entropy Image Reconstruction")
-mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=16, image_size=(width, height), image_name="MSD Image Reconstruction")
-norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=16, image_size=(width, height), image_name="NC Image Reconstruction")
+entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height), image_name="Entropy Image Reconstruction")
+mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=segment_size, image_size=(width, height), image_name="MSD Image Reconstruction")
+norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=segment_size, image_size=(width, height), image_name="NC Image Reconstruction")
 
 entropy_img.show("Entropy Image Reconstruction")
 mean_sq_img.show("MSD Image Reconstruction")
