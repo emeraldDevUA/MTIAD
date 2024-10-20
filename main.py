@@ -240,7 +240,7 @@ def mean_squared_deviation(image, expectation):
     return np.mean(np.square(pixels - expectation))
 
 
-def entropy_to_color(entropy, min_entropy, max_entropy):
+def entropy_to_color(entropy, min_entropy, max_entropy, plots=False):
     # Normalize entropy between 0 and 1
     normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
 
@@ -248,8 +248,10 @@ def entropy_to_color(entropy, min_entropy, max_entropy):
     colormap = plt.cm.viridis  # Use 'viridis' or other colormaps like 'plasma', 'coolwarm'
     color = colormap(normalized)  # Returns a tuple (R, G, B, A)
 
-    # Convert to RGB 0-255 scale
-    return tuple([int(255 * c) for c in color[:3]])
+    if plots:
+        return color[:3]
+    else:
+        return tuple([int(255 * c) for c in color[:3]])
 
 
 # Function to reconstruct the image
@@ -340,31 +342,55 @@ for (segment) in segment_array:
     segment_entropies.append(calculate_entropy(segment))
     mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
 
+# Plots
+def classification_plot(bars, values, title, xlabel, ylabel, color=['blue', 'green', 'orange']):
+    plt.figure(figsize=(8, 6))
+    plt.bar(bars,
+            values,
+            color=color)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.show()
+# Plots
+
 # DIAGRAM 1 - 3
 entropy_classification = count_distribution(segment_entropies)
 mean_sq_dev_classification = count_distribution(mean_sq_dev)
 norm_correlation_classification = count_distribution(norm_correlation)
+
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], entropy_classification, 'Entropy Classification', 'Entropy Class', 'Number of Segments')
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], mean_sq_dev_classification, 'Mean Squared Deviation Classification', 'MSD Class', 'Number of Segments')
+classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], norm_correlation_classification, 'Normalized Correlation Classification', 'NC Class', 'Number of Segments')
+
 # DIAGRAM 1 - 3
 
 # DIAGRAM 4
 entropy_thresholds = get_variable_thresholds(segment_entropies)
 
-color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1])
-color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1])
+color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1], True)
+color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1], True)
+
+classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class', 'Number of Segments',[color1, color2])
 # DIAGRAM 4
 
 # DIAGRAM 5
 mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
 
-color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
-color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
+color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
+color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
+
+classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold', 'MSD Class', 'Number of Segments', color=[color3, color4])
 # DIAGRAM 5
 
 # DIAGRAM 6
 norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
 
-color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
-color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
+color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
+color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
+
+classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold', 'NC Class', 'Number of Segments', color=["green", "red"])
 # DIAGRAM 6
 
 
