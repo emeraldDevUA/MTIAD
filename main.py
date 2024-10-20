@@ -319,12 +319,13 @@ def count_distribution(entropies):
 
 ## Plots
 file_name = 'F-16'
+_format = 'bmp'
 
-image = cv2.imread(f'images/{file_name}.bmp')
+image = cv2.imread(f'images/{file_name}.{_format}')
 height, width, channels = image.shape
 
 # CODE FOR TASK 4
-segment_size = 2
+segment_size = 4
 
 segment_array = segment_image_no_overlap(image, segment_size)
 segment_entropies = []
@@ -339,28 +340,32 @@ for (segment) in segment_array:
     segment_entropies.append(calculate_entropy(segment))
     mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
 
-# DIAGRAM 1
+# DIAGRAM 1 - 3
 entropy_classification = count_distribution(segment_entropies)
 mean_sq_dev_classification = count_distribution(mean_sq_dev)
 norm_correlation_classification = count_distribution(norm_correlation)
-# DIAGRAM 1
+# DIAGRAM 1 - 3
 
-# DIAGRAM 2
+# DIAGRAM 4
 entropy_thresholds = get_variable_thresholds(segment_entropies)
 
 color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1])
 color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1])
+# DIAGRAM 4
 
+# DIAGRAM 5
 mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
 
 color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
 color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1])
+# DIAGRAM 5
 
+# DIAGRAM 6
 norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
 
 color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
 color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1])
-# DIAGRAM 2
+# DIAGRAM 6
 
 
 entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height), image_name="Entropy Image Reconstruction")
