@@ -244,6 +244,18 @@ def classification_plot(bars, values, title, xlabel, ylabel, color=None):
     plt.show()
 
 
+def count_brightness_surges(segment):
+    brightness_surges = 0
+    image_array = np.array(segment)
+    # Flatten the image array to 1D
+    flattened_image = image_array.flatten()
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] != flattened_image[i - 1]:
+            brightness_surges += 1
+
+    return brightness_surges
+
+
 file_name = 'F-16'
 _format = 'bmp'
 
@@ -258,24 +270,23 @@ segment_array = segment_image_no_overlap(image, segment_size)
 series_count = []
 series_length = []
 brightness_segments = []
-
+brightness_surges = []
 for segment in segment_array:
     tmp = calculate_series_lengths(segment)
     series_count.append((tmp[0]))
-    series_length.append(np.sum(tmp[1])/len(tmp[1]))
+    series_length.append(np.sum(tmp[1]) / len(tmp[1]))
     brightness_segments.append(mean_arithmetical_expectation(segment))
+    brightness_surges.append(count_brightness_surges(segment))
 
-brightness_segments_img = reconstruct_image(brightness_segments, segment_size,(width, height), "Brightness")
+brightness_segments_img = reconstruct_image(brightness_segments, segment_size, (width, height), "Brightness")
 series_img = reconstruct_image(series_count, segment_size, (width, height), "Series count")
 series_length_img = reconstruct_image(series_length, segment_size, (width, height), "Series length")
-
+brightness_surges = reconstruct_image(brightness_surges, segment_size, (width, height), "Brightness Surges")
 cv2.imshow("---", image)
 
 series_length_img.show("111")
 brightness_segments_img.show("1111")
-
-
-
+brightness_surges.show("111")
 # DIAGRAM 2
 series_length_thresholds = get_variable_thresholds(series_length)
 
@@ -297,6 +308,19 @@ color8 = entropy_to_color(brightness_segments_thresholds[1], brightness_segments
                           brightness_segments_thresholds[3], True)
 brightness_segments_thresholds = [brightness_segments_thresholds[0], brightness_segments_thresholds[1]]
 classification_plot(['Threshold 1', 'Threshold 2'], brightness_segments_thresholds, 'Brightness Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 3
+
+
+# DIAGRAM 3
+brightness_surges_thresholds = get_variable_thresholds(brightness_surges)
+
+color7 = entropy_to_color(brightness_surges_thresholds[0], brightness_surges_thresholds[2],
+                          brightness_surges_thresholds[3], True)
+color8 = entropy_to_color(brightness_surges_thresholds[1], brightness_surges_thresholds[2],
+                          brightness_surges_thresholds[3], True)
+brightness_surges_thresholds = [brightness_surges_thresholds[0], brightness_surges_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_surges_thresholds, 'Brightness Surges Threshold',
                     'NC Class', 'Threshold Value', color=[color7, color8])
 # DIAGRAM 3
 
