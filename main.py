@@ -252,51 +252,52 @@ height, width, channels = image.shape
 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # CODE FOR TASK 4
-segment_size = 64
+segment_size = 32
 segment_array = segment_image_no_overlap(image, segment_size)
 
 series_count = []
 series_length = []
+brightness_segments = []
 
 for segment in segment_array:
     tmp = calculate_series_lengths(segment)
     series_count.append((tmp[0]))
     series_length.append(np.sum(tmp[1])/len(tmp[1]))
+    brightness_segments.append(mean_arithmetical_expectation(segment))
 
+brightness_segments_img = reconstruct_image(brightness_segments, segment_size,(width, height), "Brightness")
 series_img = reconstruct_image(series_count, segment_size, (width, height), "Series count")
-series_length_img = reconstruct_image(series_count, segment_size, (width, height), "Series length")
+series_length_img = reconstruct_image(series_length, segment_size, (width, height), "Series length")
 
 cv2.imshow("---", image)
 
-series_img.show("fff")
-series_length_img.show("bbb")
+series_length_img.show("111")
+brightness_segments_img.show("1111")
 
 
 
-# DIAGRAM 1
-series_count_thresholds = get_variable_thresholds(series_count)
-
-color5 = entropy_to_color(series_count_thresholds[0], series_count_thresholds[2],
-                          series_count_thresholds[3], True)
-color6 = entropy_to_color(series_count_thresholds[1], series_count_thresholds[2],
-                          series_count_thresholds[3], True)
-series_count_thresholds = [series_count_thresholds[0], series_count_thresholds[1]]
-classification_plot(['Threshold 1', 'Threshold 2'], series_count_thresholds, 'Series Count Threshold',
-                    'NC Class', 'Threshold Value', color=[color5, color6])
-# DIAGRAM 1
 # DIAGRAM 2
 series_length_thresholds = get_variable_thresholds(series_length)
-
-
 
 color7 = entropy_to_color(series_length_thresholds[0], series_length_thresholds[2],
                           series_length_thresholds[3], True)
 color8 = entropy_to_color(series_length_thresholds[1], series_length_thresholds[2],
                           series_length_thresholds[3], True)
 series_length_thresholds = [series_length_thresholds[0], series_length_thresholds[1]]
-classification_plot(['Threshold 1', 'Threshold 2'], series_length_thresholds, 'Series Count Threshold',
+classification_plot(['Threshold 1', 'Threshold 2'], series_length_thresholds, 'Series length Threshold',
                     'NC Class', 'Threshold Value', color=[color7, color8])
 # DIAGRAM 2
 
+# DIAGRAM 3
+brightness_segments_thresholds = get_variable_thresholds(brightness_segments)
+
+color7 = entropy_to_color(brightness_segments_thresholds[0], brightness_segments_thresholds[2],
+                          brightness_segments_thresholds[3], True)
+color8 = entropy_to_color(brightness_segments_thresholds[1], brightness_segments_thresholds[2],
+                          brightness_segments_thresholds[3], True)
+brightness_segments_thresholds = [brightness_segments_thresholds[0], brightness_segments_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_segments_thresholds, 'Brightness Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 3
 
 cv2.waitKey(0)
