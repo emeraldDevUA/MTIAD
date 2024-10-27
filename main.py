@@ -16,7 +16,10 @@ def segment_image_no_overlap(image, segment_size):
     Returns:
     - List of image segments
     """
-    height, width, _ = image.shape  # Get the actual dimensions of the image
+    if len(image.shape) == 3:
+        height, width, _ = image.shape
+    else:
+        height, width = image.shape
     segments = []  # Initialize an empty list to store segments
 
     # Loop through the image to create segments of size `segment_size x segment_size`
@@ -27,6 +30,7 @@ def segment_image_no_overlap(image, segment_size):
                 segments.append(segment)  # Add the segment to the list
 
     return segments  # Return the list of segments
+
 
 # CODE FOR TASK 4
 def normalized_correlation(image1, image2):
@@ -142,8 +146,6 @@ def count_distribution(entropies):
     return [class_a, class_b, class_c]
 
 
-
-
 def entropy_to_color(entropy, min_entropy, max_entropy, plots=False):
     # Normalize entropy between 0 and 1
     normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
@@ -197,6 +199,36 @@ def reconstruct_image(entropies, n, image_size, image_name):
     return restored_image
 
 
+def calculate_series_lengths(image):
+    image_array = np.array(image)
+
+    # Flatten the image array to 1D
+    flattened_image = image_array.flatten()
+
+    # Calculate series lengths and count of series
+    series_lengths = []
+    current_value = flattened_image[0]
+    current_length = 1
+    series_count = 0
+
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] == current_value:
+            current_length += 1
+        else:
+            # Add the length of the current series
+            series_lengths.append(current_length)
+            series_count += 1
+            # Reset for the new series
+            current_value = flattened_image[i]
+            current_length = 1
+
+    # Append the final series
+    series_lengths.append(current_length)
+    series_count += 1
+
+    return [series_count, series_lengths]
+
+
 ## Plots
 def classification_plot(bars, values, title, xlabel, ylabel, color=None):
     if color is None:
@@ -212,95 +244,59 @@ def classification_plot(bars, values, title, xlabel, ylabel, color=None):
     plt.show()
 
 
-
 file_name = 'F-16'
 _format = 'bmp'
 
 image = cv2.imread(f'images/{file_name}.{_format}')
 height, width, channels = image.shape
+image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # CODE FOR TASK 4
-segment_size = 16
-
+segment_size = 64
 segment_array = segment_image_no_overlap(image, segment_size)
-segment_entropies = []
-mean_sq_dev = []
-norm_correlation = []
 
-for i in range(len(segment_array) - 1):
-    norm_correlation.append(normalized_correlation(segment_array[i], segment_array[i + 1]))
+series_count = []
+series_length = []
 
-norm_correlation.append(0)
-for (segment) in segment_array:
-    segment_entropies.append(calculate_entropy(segment))
-    mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
+for segment in segment_array:
+    tmp = calculate_series_lengths(segment)
+    series_count.append((tmp[0]))
+    series_length.append(np.sum(tmp[1])/len(tmp[1]))
+
+series_img = reconstruct_image(series_count, segment_size, (width, height), "Series count")
+series_length_img = reconstruct_image(series_count, segment_size, (width, height), "Series length")
+
+cv2.imshow("---", image)
+
+series_img.show("fff")
+series_length_img.show("bbb")
 
 
 
+# DIAGRAM 1
+series_count_thresholds = get_variable_thresholds(series_count)
 
-# Plots
-
-# DIAGRAM 1 - 3
-entropy_classification = count_distribution(segment_entropies)
-mean_sq_dev_classification = count_distribution(mean_sq_dev)
-norm_correlation_classification = count_distribution(norm_correlation)
-
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], entropy_classification,
-                    'Entropy Classification', 'Entropy Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], mean_sq_dev_classification,
-                    'Mean Squared Deviation Classification', 'MSD Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], norm_correlation_classification,
-                    'Normalized Correlation Classification', 'NC Class', 'Number of Segments')
-
-# DIAGRAM 1 - 3
-
-# DIAGRAM 4
-entropy_thresholds = get_variable_thresholds(segment_entropies)
-
-color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[2], entropy_thresholds[3], True)
-color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[2], entropy_thresholds[3], True)
-entropy_thresholds = [entropy_thresholds[0], entropy_thresholds[1]]
-
-classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class',
-                    'Threshold Value', [color1, color2])
-# DIAGRAM 4
-
-# DIAGRAM 5
-mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
-
-color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[2], mean_sq_dev_thresholds[3], True)
-color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[2], mean_sq_dev_thresholds[3], True)
-mean_sq_dev_thresholds = [mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1]]
-
-classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold',
-                    'MSD Class', 'Threshold Value', color=[color3, color4])
-# DIAGRAM 5
-
-# DIAGRAM 6
-norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
-
-color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[2],
-                          norm_correlation_thresholds[3], True)
-color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[2],
-                          norm_correlation_thresholds[3], True)
-norm_correlation_thresholds = [norm_correlation_thresholds[0], norm_correlation_thresholds[1]]
-classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold',
+color5 = entropy_to_color(series_count_thresholds[0], series_count_thresholds[2],
+                          series_count_thresholds[3], True)
+color6 = entropy_to_color(series_count_thresholds[1], series_count_thresholds[2],
+                          series_count_thresholds[3], True)
+series_count_thresholds = [series_count_thresholds[0], series_count_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], series_count_thresholds, 'Series Count Threshold',
                     'NC Class', 'Threshold Value', color=[color5, color6])
-# DIAGRAM 6
+# DIAGRAM 1
+# DIAGRAM 2
+series_length_thresholds = get_variable_thresholds(series_length)
 
 
-entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height),
-                                image_name="Entropy Image Reconstruction")
-mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=segment_size, image_size=(width, height),
-                                image_name="MSD Image Reconstruction")
-norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=segment_size, image_size=(width, height),
-                                         image_name="NC Image Reconstruction")
 
-entropy_img.show("Entropy Image Reconstruction")
-mean_sq_img.show("MSD Image Reconstruction")
-norm_correlation_img.show("NC Image Reconstruction")
+color7 = entropy_to_color(series_length_thresholds[0], series_length_thresholds[2],
+                          series_length_thresholds[3], True)
+color8 = entropy_to_color(series_length_thresholds[1], series_length_thresholds[2],
+                          series_length_thresholds[3], True)
+series_length_thresholds = [series_length_thresholds[0], series_length_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], series_length_thresholds, 'Series Count Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 2
 
-entropy_img.save(f'saves/entropy_{file_name}.bmp')
-mean_sq_img.save(f'saves/msd_{file_name}.bmp')
-norm_correlation_img.save(f'saves/nc_{file_name}.bmp')
-# CODE FOR TASK 4
+
+cv2.waitKey(0)
