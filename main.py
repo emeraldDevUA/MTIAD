@@ -264,7 +264,7 @@ height, width, channels = image.shape
 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # CODE FOR TASK 4
-segment_size = 32
+segment_size = 16
 segment_array = segment_image_no_overlap(image, segment_size)
 
 series_count = []
