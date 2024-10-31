@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
+
+from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
-import math as m
 
 
 def segment_image_no_overlap(image, segment_size):
@@ -15,7 +16,10 @@ def segment_image_no_overlap(image, segment_size):
     Returns:
     - List of image segments
     """
-    height, width, _ = image.shape  # Get the actual dimensions of the image
+    if len(image.shape) == 3:
+        height, width, _ = image.shape
+    else:
+        height, width = image.shape
     segments = []  # Initialize an empty list to store segments
 
     # Loop through the image to create segments of size `segment_size x segment_size`
@@ -28,208 +32,296 @@ def segment_image_no_overlap(image, segment_size):
     return segments  # Return the list of segments
 
 
-def get_histogram(image):
-    hist, bins = np.histogram(image.flatten(), 256, [0, 256])
-    return hist
+# CODE FOR TASK 4
+def normalized_correlation(image1, image2):
+    # Ensure both images have the same size and data type
+    if image1.shape != image2.shape:
+        raise ValueError("Images must have the same dimensions.")
+    if image1.dtype != image2.dtype:
+        image2 = image2.astype(image1.dtype)
 
+    # Flatten the images into 1D arrays
+    img1_flat = image1.flatten()
+    img2_flat = image2.flatten()
 
-def get_probs(image, w, h):
-    total_cnt = 0
-    red_cnt = 0
-    blue_cnt = 0
-    green_cnt = 0
-    yellow_cnt = 0
-    white_cnt = 0
-    other_color = 0
+    # Compute the means of the images
+    mean_img1 = np.mean(img1_flat)
+    mean_img2 = np.mean(img2_flat)
 
-    for x in range(h):
-        for y in range(w):
-            total_cnt += 1.0
-            b, g, r = image[x, y]
-            r = int(r)
-            b = int(b)
-            g = int(g)
-            if r > g + 30 and r > b + 30:
-                red_cnt += 1.0
-            if b > r + 30 and b > g + 30:
-                blue_cnt += 1.0
-            if g > r + 30 and g > b + 30:
-                green_cnt += 1.0
-            if r > 150 and g > 150 and b < 100:
-                yellow_cnt += 1.0
-            if r > 200 and g > 200 and b > 200:
-                white_cnt += 0.1
-            else:
-                other_color += 1.0
-    N = 3
-    p1 = round(red_cnt / total_cnt, N)
-    p2 = round(blue_cnt / total_cnt, N)
-    p3 = round(green_cnt / total_cnt, N)
-    p4 = round(yellow_cnt / total_cnt, N)
-    p5 = round(white_cnt / total_cnt, N)
-    p6 = round(other_color / total_cnt, N)
+    # Subtract the mean from the images (center them)
+    img1_centered = img1_flat - mean_img1
+    img2_centered = img2_flat - mean_img2
 
-    return [p1, p2, p3, p4, p5, p6]
+    # Calculate the numerator (sum of the element-wise product of the centered images)
+    numerator = np.sum(img1_centered * img2_centered)
 
+    # Calculate the denominator (product of the square roots of the sum of squares)
+    denominator = np.sqrt(np.sum(img1_centered ** 2) * np.sum(img2_centered ** 2))
 
-def shanon_entropy(probs):
-    final_value = 0
-    for p in probs:
-        if p > 0:
-            final_value += p * m.log(p, 2)
-    return -final_value
-
-
-def hartley_entropy(img):
-    # Convert image to grayscale (if it's not already)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 'L' mode is for grayscale in PIL
-
-    # Convert image to numpy array
-    img_array = np.array(img)
-
-    # Count unique grayscale values
-    unique_colors = np.unique(img_array)
-
-    # Number of unique grayscale values
-    num_unique_colors = unique_colors.shape[0]
-
-    # Hartley entropy
-    if num_unique_colors > 0:
-        H0 = m.log2(num_unique_colors)
+    # Calculate the normalized correlation coefficient
+    if denominator == 0:
+        return 0  # Avoid division by zero
     else:
-        H0 = 0
+        correlation_coefficient = numerator / denominator
 
-    return H0
+    return correlation_coefficient
 
 
-def markov_process(img):
-    img_array = np.array(img)
+def calculate_entropy(image):
+    # Convert the image to grayscale if it's not already
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    if len(img_array.shape) == 3:
-        img_array = np.mean(img_array, axis=2).astype(int)
+    # Flatten the image to a 1D array of pixel values
+    pixel_values = image.flatten()
 
-    max_value = img_array.max()
-    transition_matrix = np.zeros((max_value + 1, max_value + 1))
+    # Get the histogram of pixel values
+    histogram, bin_edges = np.histogram(pixel_values, bins=256, range=(0, 256), density=True)
 
-    for i in range(img_array.shape[0]):
-        for j in range(img_array.shape[1] - 1):
-            current_pixel = img_array[i, j]
-            next_pixel = img_array[i, j + 1]
-            transition_matrix[current_pixel, next_pixel] += 1
+    # Filter out zero probabilities to avoid log(0)
+    histogram = histogram[histogram > 0]
 
-    row_sums = transition_matrix.sum(axis=1)
-    if row_sums.all() != 0:
-        transition_matrix = transition_matrix / row_sums[:, np.newaxis]
-
-    transition_matrix = np.nan_to_num(transition_matrix)
-
-    return transition_matrix
-
-# First-order Markov Process Calculation
-def markov_entropy(image_channel):
-    # Create a 256x256 transition matrix (for pixels 0-255)
-    transition_matrix = np.zeros((256, 256), dtype=int)
-
-    # Find transitions between pixels
-    pixel_values = image_channel.flatten()
-    for i in range(len(pixel_values) - 1):
-        current_pixel = pixel_values[i]
-        next_pixel = pixel_values[i + 1]
-        transition_matrix[current_pixel, next_pixel] += 1
-
-    # Normalize the transition matrix
-    transition_matrix = transition_matrix / np.sum(transition_matrix)
-
-    # Calculate the entropy for the process
-    entropy_value = 0
-    for row in transition_matrix:
-        for transition in row:
-            if transition > 0:
-                entropy_value -= transition * np.log2(transition)
-
-    return entropy_value
-
-def calculate_entropy(transition_matrix):
-    entropy = 0
-    for row in transition_matrix:
-        # Remove zero probabilities to avoid log(0)
-        non_zero_probs = row[row > 0]
-        entropy += -np.sum(non_zero_probs * np.log2(non_zero_probs))
+    # Compute entropy using the Shannon formula
+    entropy = -np.sum(histogram * np.log2(histogram))
 
     return entropy
 
-def plot_single_entropy_chart(entropy_values):
-    fig = plt.figure(figsize=(10, 6))
 
-    ax = fig.add_subplot(111)
-    x = ['Shannon Entropy', 'Hartley Entropy', 'Partial Shannon', 'Partial Hartley', 'Markov Entropy']
-    y = entropy_values
+def mean_arithmetical_expectation(image):
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    pixel_values = image.flatten()
+    sum_value = np.sum(pixel_values)
 
-    ax.bar(x, y, color=['blue', 'green', 'orange', 'red', 'purple'])
+    return sum_value / len(pixel_values)
 
-    ax.set_title('Entropy of the Entire Image and Parts')
-    ax.set_xlabel('Entropy Type')
-    ax.set_ylabel('Entropy Value')
 
+def mean_squared_deviation(image, expectation):
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    pixels = image.flatten()
+    # Calculate the mean squared deviation
+    return np.mean(np.square(pixels - expectation))
+
+
+def get_variable_thresholds(entropies):
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 1 * std_entropy
+
+    plus_sigma_value = mean_entropy + 1 * std_entropy
+    if minus_sigma_value <= 0:
+        minus_sigma_value = plus_sigma_value / 5
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies) * 0.8
+
+    return [minus_sigma_value, plus_sigma_value, np.min(entropies), np.max(entropies)]
+
+
+def count_distribution(entropies):
+    class_a = 0
+    class_b = 0
+    class_c = 0
+
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 1 * std_entropy
+    plus_sigma_value = mean_entropy + 1 * std_entropy
+
+    if minus_sigma_value <= 0:
+        minus_sigma_value = plus_sigma_value / 5
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies) * 0.8
+
+    for (value) in entropies:
+        if value < minus_sigma_value:
+            class_a += 1
+        elif value > plus_sigma_value:
+            class_c += 1
+        else:
+            class_b += 1
+
+    return [class_a, class_b, class_c]
+
+
+def entropy_to_color(entropy, min_entropy, max_entropy, plots=False):
+    # Normalize entropy between 0 and 1
+    normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
+
+    # Convert to color using a colormap (plt.cm)
+    colormap = plt.cm.viridis  # Use 'viridis' or other colormaps like 'plasma', 'coolwarm'
+    color = colormap(normalized)  # Returns a tuple (R, G, B, A)
+
+    if plots:
+        return color[:3]
+    else:
+        return tuple([int(255 * c) for c in color[:3]])
+
+
+# Function to reconstruct the image
+def reconstruct_image(entropies, n, image_size, image_name):
+    # Create an empty image
+    restored_image = Image.new('RGB', image_size)
+    draw = ImageDraw.Draw(restored_image)
+
+    try:
+        font = ImageFont.truetype("res/Montserrat-Bold.ttf", 50)  # You can adjust the font size
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Get the minimum and maximum entropy for color scaling
+    min_entropy = np.min(entropies)
+    max_entropy = np.max(entropies)
+
+    # Number of segments along the width and height
+    num_segments_x = image_size[0] // n
+    num_segments_y = image_size[1] // n
+
+    # Loop over each segment and paste it onto the restored image
+    for i in range(num_segments_y):
+        for j in range(num_segments_x):
+            # Get the segment index
+            idx = i * num_segments_x + j
+
+            # Get the entropy for this segment
+            entropy = entropies[idx]
+
+            # Get the color for this entropy value
+            color = entropy_to_color(entropy, min_entropy, max_entropy)
+
+            # Draw the n x n block with the corresponding color
+            draw.rectangle([j * n, i * n, (j + 1) * n, (i + 1) * n], fill=color)
+
+    text_position = (0, image_size[1] - 100)
+    draw.text(text_position, image_name, fill=(0, 0, 0), font=font)
+    return restored_image
+
+
+def calculate_series_lengths(image):
+    image_array = np.array(image)
+
+    # Flatten the image array to 1D
+    flattened_image = image_array.flatten()
+
+    # Calculate series lengths and count of series
+    series_lengths = []
+    current_value = flattened_image[0]
+    current_length = 1
+    series_count = 0
+
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] == current_value:
+            current_length += 1
+        else:
+            # Add the length of the current series
+            series_lengths.append(current_length)
+            series_count += 1
+            # Reset for the new series
+            current_value = flattened_image[i]
+            current_length = 1
+
+    # Append the final series
+    series_lengths.append(current_length)
+    series_count += 1
+
+    return [series_count, series_lengths]
+
+
+## Plots
+def classification_plot(bars, values, title, xlabel, ylabel, color=None):
+    if color is None:
+        color = ['#40E0D0', '#D4AF37', '#7f00ff']
+    plt.figure(figsize=(8, 6))
+    plt.bar(bars,
+            values,
+            color=color)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.tight_layout()
     plt.show()
 
-def plot_markov_entropy_3d(segments, segment_size):
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection='3d')
 
-    entropy_values = []
+def count_brightness_surges(segment):
+    brightness_surges = 0
+    image_array = np.array(segment)
+    # Flatten the image array to 1D
+    flattened_image = image_array.flatten()
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] != flattened_image[i - 1]:
+            brightness_surges += 1
 
-    for segment in segments:
-        entropy_values.append(markov_entropy(segment))
-
-    x_vals = np.arange(0, image.shape[1], segment_size)
-    y_vals = np.arange(0, image.shape[0], segment_size)
-    x_vals, y_vals = np.meshgrid(x_vals, y_vals)
-
-    x_vals_flat = x_vals.flatten()
-    y_vals_flat = y_vals.flatten()
-
-    ax.bar3d(x_vals_flat, y_vals_flat, np.zeros_like(entropy_values), segment_size, segment_size, entropy_values, shade=True, color='purple')
-
-    ax.set_title('Markov Entropy for Image Segments')
-    ax.set_xlabel('X Coordinate')
-    ax.set_ylabel('Y Coordinate')
-    ax.set_zlabel('Entropy Value')
-
-    plt.show()
+    return brightness_surges
 
 
-segment_size = 64
-image = cv2.imread('images/I23.BMP')
+file_name = 'F-16'
+_format = 'bmp'
+
+image = cv2.imread(f'images/{file_name}.{_format}')
 height, width, channels = image.shape
-segments = segment_image_no_overlap(image, segment_size)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-probs = get_probs(image, width, height)
-entropy = shanon_entropy(probs)
-partial_sh_entropy = 0
-partial_hly_entropy = 0
-matrix_temp = markov_process(segments[0])
-cnt = 0
-for i in segments:
+# CODE FOR TASK 4
+segment_size = 32
+segment_array = segment_image_no_overlap(image, segment_size)
 
-    partial_sh_entropy += shanon_entropy(get_probs(i, 64, 64))
-    partial_hly_entropy += hartley_entropy(i)
+series_count = []
+series_length = []
+brightness_segments = []
+brightness_surges = []
+for segment in segment_array:
+    tmp = calculate_series_lengths(segment)
+    series_count.append((tmp[0]))
+    series_length.append(np.sum(tmp[1]) / len(tmp[1]))
+    brightness_segments.append(mean_arithmetical_expectation(segment))
+    brightness_surges.append(count_brightness_surges(segment))
 
-    cnt = cnt + 1
+brightness_segments_img = reconstruct_image(brightness_segments, segment_size, (width, height), "Brightness")
+series_img = reconstruct_image(series_count, segment_size, (width, height), "Series count")
+series_length_img = reconstruct_image(series_length, segment_size, (width, height), "Series length")
+brightness_surges = reconstruct_image(brightness_surges, segment_size, (width, height), "Brightness Surges")
+cv2.imshow("---", image)
 
-partial_sh_entropy = partial_sh_entropy / (len(segments))
-partial_hly_entropy = partial_hly_entropy / len(segments)
-matrix_temp = matrix_temp / len(segments)
-my_array = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy]
-hist = get_histogram(image)
+series_length_img.show("111")
+brightness_segments_img.show("1111")
+brightness_surges.show("111")
+# DIAGRAM 2
+series_length_thresholds = get_variable_thresholds(series_length)
 
-transition_matrix = markov_process(image)
+color7 = entropy_to_color(series_length_thresholds[0], series_length_thresholds[2],
+                          series_length_thresholds[3], True)
+color8 = entropy_to_color(series_length_thresholds[1], series_length_thresholds[2],
+                          series_length_thresholds[3], True)
+series_length_thresholds = [series_length_thresholds[0], series_length_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], series_length_thresholds, 'Series length Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 2
+
+# DIAGRAM 3
+brightness_segments_thresholds = get_variable_thresholds(brightness_segments)
+
+color7 = entropy_to_color(brightness_segments_thresholds[0], brightness_segments_thresholds[2],
+                          brightness_segments_thresholds[3], True)
+color8 = entropy_to_color(brightness_segments_thresholds[1], brightness_segments_thresholds[2],
+                          brightness_segments_thresholds[3], True)
+brightness_segments_thresholds = [brightness_segments_thresholds[0], brightness_segments_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_segments_thresholds, 'Brightness Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 3
 
 
-entropy_values = [entropy, hartley_entropy(image), partial_sh_entropy, partial_hly_entropy, markov_entropy(image)]
+# DIAGRAM 3
+brightness_surges_thresholds = get_variable_thresholds(brightness_surges)
 
-plot_single_entropy_chart(entropy_values)
-plot_markov_entropy_3d(segments, segment_size)
+color7 = entropy_to_color(brightness_surges_thresholds[0], brightness_surges_thresholds[2],
+                          brightness_surges_thresholds[3], True)
+color8 = entropy_to_color(brightness_surges_thresholds[1], brightness_surges_thresholds[2],
+                          brightness_surges_thresholds[3], True)
+brightness_surges_thresholds = [brightness_surges_thresholds[0], brightness_surges_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_surges_thresholds, 'Brightness Surges Threshold',
+                    'NC Class', 'Threshold Value', color=[color7, color8])
+# DIAGRAM 3
 
-
+cv2.waitKey(0)
