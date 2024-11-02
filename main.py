@@ -426,9 +426,30 @@ brightness_segments_img.show()
 brightness_surges_img.show()
 entropy_image.show()
 
+
+def compute_correlations_plot(matrix, titles):
+    plt.figure(figsize=(8, 6))
+    plt.imshow(matrix, cmap='coolwarm', interpolation='nearest')
+    plt.colorbar()
+    plt.xticks(np.arange(len(titles)), titles, rotation=45, ha='right')
+    plt.yticks(np.arange(len(titles)), titles)
+    plt.title('Correlation Matrix of Image Segment Metrics')
+
+    # Annotate the correlation values on the plot
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            plt.text(j, i, f"{matrix[i][j]:.2f}", ha='center', va='center', color='black' if abs(matrix[i][j]) < 0.7 else 'white')
+
+    plt.tight_layout()
+    plt.show()
+
 strings = ['Series Length', 'Brightness Surges', 'Entropy', 'MSD']
 
 matrix = compute_correlations(series_length, brightness_segments, brightness_surges, entropies, msd)
+
+compute_correlations_plot(matrix, strings)
+
+
 
 # DIAGRAM 2
 series_length_thresholds = get_variable_thresholds(series_length)
