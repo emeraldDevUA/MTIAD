@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
+
 def segment_image(input_image_path, output_image_path):
     image = Image.open(input_image_path)
     draw = ImageDraw.Draw(image)
@@ -21,6 +22,7 @@ def segment_image(input_image_path, output_image_path):
             segment_number += 1
 
     image.save(output_image_path)
+
 
 input_image = "images/I23.BMP"
 output_image = "images/I23-segmented.BMP"

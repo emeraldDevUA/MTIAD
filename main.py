@@ -16,7 +16,10 @@ def segment_image_no_overlap(image, segment_size):
     Returns:
     - List of image segments
     """
-    height, width, _ = image.shape  # Get the actual dimensions of the image
+    if len(image.shape) == 3:
+        height, width, _ = image.shape
+    else:
+        height, width = image.shape
     segments = []  # Initialize an empty list to store segments
 
     # Loop through the image to create segments of size `segment_size x segment_size`
@@ -29,72 +32,23 @@ def segment_image_no_overlap(image, segment_size):
     return segments  # Return the list of segments
 
 
-
-
-def plot_single_entropy_chart(entropy_values):
-    fig = plt.figure(figsize=(10, 6))
-
-    ax = fig.add_subplot(111)
-    x = ['Shannon Entropy', 'Hartley Entropy', 'Partial Shannon', 'Partial Hartley', 'Markov Entropy']
-    y = entropy_values
-
-    ax.bar(x, y, color=['blue', 'green', 'orange', 'red', 'purple'])
-
-    ax.set_title('Entropy of the Entire Image and Parts')
-    ax.set_xlabel('Entropy Type')
-    ax.set_ylabel('Entropy Value')
-
-    plt.tight_layout()
-    plt.show()
-
-
-def count_different_pixels(image1, image2):
-    if image1.dtype != image2.dtype:
-        image2 = image2.astype(image1.dtype)  #
-    # Since the images are guaranteed to be the same size, we can directly compute the difference
-    g1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-    g2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
-    diff = cv2.absdiff(g1, g2)
-
-    # Convert the difference image to grayscale
-
-    # Count the number of non-zero pixels (different pixels)
-    pixels_in_range = np.count_nonzero(diff < 50)
-
-    return pixels_in_range
-
-
-def mean_sq_deviation(image1, image2):
-    # Ensure both images have the same data type
-    if image1.dtype != image2.dtype:
-        image2 = image2.astype(image1.dtype)
-
-    # Compute the difference between the two images
-    diff = cv2.absdiff(image1, image2)
-
-    # Convert the difference to grayscale if necessary (depends on your use case)
-    # If you want to compute MSE for color images, you can skip this step.
-    gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-
-    # Compute the squared differences
-    squared_diff = np.square(gray_diff)
-
-    # Compute the mean of the squared differences
-    mse = np.mean(squared_diff)
-
-    return mse
+# CODE FOR TASK 4
+import numpy as np
+from PIL import Image
 
 
 def normalized_correlation(image1, image2):
-    # Ensure both images have the same size and data type
-    if image1.shape != image2.shape:
-        raise ValueError("Images must have the same dimensions.")
-    if image1.dtype != image2.dtype:
-        image2 = image2.astype(image1.dtype)
+    # Convert PIL images to NumPy arrays
+    img1_array = np.array(image1, dtype=np.float32)
+    img2_array = np.array(image2, dtype=np.float32)
+
+    # Ensure both images have the same size
+    # if img1_array.shape != img2_array.shape:
+    #     raise ValueError("Images must have the same dimensions.")
 
     # Flatten the images into 1D arrays
-    img1_flat = image1.flatten()
-    img2_flat = image2.flatten()
+    img1_flat = img1_array.flatten()
+    img2_flat = img2_array.flatten()
 
     # Compute the means of the images
     mean_img1 = np.mean(img1_flat)
@@ -117,90 +71,6 @@ def normalized_correlation(image1, image2):
         correlation_coefficient = numerator / denominator
 
     return correlation_coefficient
-
-
-def calculate_psnr(image1, image2):
-    """Calculate PSNR (Peak Signal-to-Noise Ratio) between two images."""
-    mse = mean_sq_deviation(image1, image2)
-
-    # If MSE is zero, the images are identical, and PSNR is infinite
-    if mse == 0:
-        return float('inf')
-
-    # Maximum possible pixel value of the image
-    max_pixel_value = 255.0
-
-    # Compute PSNR
-    psnr = 10 * np.log10((max_pixel_value ** 2) / mse)
-    return psnr
-
-
-# CODE FOR TASK 3
-
-## Plots
-
-
-def number_of_erroneous_pixels_plot(erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, pixels):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise', 'Total Pixels'],
-            [erroneous_pixels_gauss, erroneous_pixels_poisson, erroneous_pixels_speckle, pixels],
-            color=['blue', 'green', 'orange', 'red'])
-    plt.title("Number of Erroneous Pixels")
-    plt.xlabel("Noise Type")
-    plt.ylabel("Number of Erroneous Pixels")
-    plt.tight_layout()
-    plt.show()
-
-
-def error_percentage_per_noise_type_plot(gauss_error, poisson_error, speckle_error):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
-            [gauss_error, poisson_error, speckle_error],
-            color=['blue', 'green', 'orange'])
-    plt.title("Error Percentage per Noise Type")
-    plt.xlabel("Noise Type")
-    plt.ylabel("Error Percentage (%)")
-    plt.tight_layout()
-    plt.show()
-
-
-def mean_squared_error_per_noise_type_plot(gauss_error_mean, poisson_error_mean, speckle_error_mean):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
-            [gauss_error_mean, poisson_error_mean, speckle_error_mean],
-            color=['blue', 'green', 'orange'])
-    plt.title("Mean Squared Error per Noise Type")
-    plt.xlabel("Noise Type")
-    plt.ylabel("Mean Squared Error")
-    plt.tight_layout()
-    plt.show()
-
-
-def psnr_per_noise_type_plot(psnr_gauss, psnr_poisson, psnr_speckle):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Noise', 'Poisson Noise', 'Speckle Noise'],
-            [psnr_gauss, psnr_poisson, psnr_speckle],
-            color=['blue', 'green', 'orange'])
-    plt.title("PSNR (Peak Signal-to-Noise Ratio) per Noise Type")
-    plt.xlabel("Noise Type")
-    plt.ylabel("PSNR (dB)")
-    plt.tight_layout()
-    plt.show()
-
-
-
-
-def normalized_correlation_plot(normalized_correlation_gauss, normalized_correlation_poisson,
-                                normalized_correlation_speckle):
-    plt.figure(figsize=(8, 6))
-    plt.bar(['Gauss Correlation', 'Poisson Correlation', 'Speckle Correlation'],
-            [normalized_correlation_gauss, normalized_correlation_poisson, normalized_correlation_speckle],
-            color=['blue', 'green', 'orange'])
-    plt.title("Normalized Correlation Type")
-    plt.xlabel("Noise Type")
-    plt.ylabel("Normalized Correlation Value")
-    plt.tight_layout()
-    plt.show()
 
 
 def calculate_entropy(image):
@@ -240,6 +110,48 @@ def mean_squared_deviation(image, expectation):
     return np.mean(np.square(pixels - expectation))
 
 
+def get_variable_thresholds(entropies):
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 1 * std_entropy
+
+    plus_sigma_value = mean_entropy + 1 * std_entropy
+    if minus_sigma_value <= 0:
+        minus_sigma_value = np.min(entropies) * 1.4
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies) * 0.8
+
+    return [minus_sigma_value, plus_sigma_value, np.min(entropies), np.max(entropies)]
+
+
+def count_distribution(entropies):
+    class_a = 0
+    class_b = 0
+    class_c = 0
+
+    mean_entropy = np.mean(entropies)
+    std_entropy = np.std(entropies)
+
+    minus_sigma_value = mean_entropy - 1 * std_entropy
+    plus_sigma_value = mean_entropy + 1 * std_entropy
+
+    if minus_sigma_value <= 0:
+        minus_sigma_value = plus_sigma_value / 5
+    if plus_sigma_value >= np.max(entropies):
+        plus_sigma_value = np.max(entropies) * 0.8
+
+    for (value) in entropies:
+        if value < minus_sigma_value:
+            class_a += 1
+        elif value > plus_sigma_value:
+            class_c += 1
+        else:
+            class_b += 1
+
+    return [class_a, class_b, class_c]
+
+
 def entropy_to_color(entropy, min_entropy, max_entropy, plots=False):
     # Normalize entropy between 0 and 1
     normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
@@ -264,7 +176,6 @@ def reconstruct_image(entropies, n, image_size, image_name):
         font = ImageFont.truetype("res/Montserrat-Bold.ttf", 50)  # You can adjust the font size
     except IOError:
         font = ImageFont.load_default()
-
 
     # Get the minimum and maximum entropy for color scaling
     min_entropy = np.min(entropies)
@@ -294,56 +205,77 @@ def reconstruct_image(entropies, n, image_size, image_name):
     return restored_image
 
 
-def get_variable_thresholds(entropies):
-    min_entropy = np.min(entropies)
-    max_entropy = np.max(entropies)
-    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
-    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
-    return [minus_sigma_value, plus_sigma_value]
-def count_distribution(entropies):
-    class_a = 0
-    class_b = 0
-    class_c = 0
+from PIL import Image, ImageDraw, ImageFont
 
-    min_entropy = np.min(entropies)
-    max_entropy = np.max(entropies)
-    minus_sigma_value = (50 - 34.1) * (max_entropy - min_entropy) + min_entropy
-    plus_sigma_value = (50 + 34.1) * (max_entropy - min_entropy) + min_entropy
-    for (value) in entropies:
-        if value < minus_sigma_value:
-            class_a += 1
-        elif value > plus_sigma_value:
-            class_c += 1
+
+def threshold_image(image, values, threshold, n, image_size):
+    # Create a new blank image with the same size and mode as the input image
+    new_image = Image.new(image.mode, image_size)
+    draw = ImageDraw.Draw(new_image)
+
+    try:
+        background = image
+        new_image.paste(background)
+        font = ImageFont.truetype("res/Montserrat-Bold.ttf", 50)  # Adjust the font size as needed
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Number of segments along the width and height
+    num_segments_x = image_size[0] // n
+    num_segments_y = image_size[1] // n
+
+    # Loop over each segment and draw rectangles on the new image based on the threshold condition
+    for i in range(num_segments_y):
+        for j in range(num_segments_x):
+            # Get the segment index
+            idx = i * num_segments_x + j
+
+            # Get the entropy for this segment
+            entropy = values[idx]
+            if not threshold[0] < entropy < threshold[1]:
+                draw.rectangle([j * n, i * n, (j + 1) * n, (i + 1) * n], fill='Black')
+
+    # Add text to the new image
+    text_position = (0, image_size[1] - 100)
+    draw.text(text_position, "Thresholded Image", fill='White', font=font)
+
+    return new_image
+
+
+def calculate_series_lengths(image):
+    image_array = np.array(image)
+
+    # Flatten the image array to 1D
+    flattened_image = image_array.flatten()
+
+    # Calculate series lengths and count of series
+    series_lengths = []
+    current_value = flattened_image[0]
+    current_length = 1
+    series_count = 0
+
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] == current_value:
+            current_length += 1
         else:
-            class_b += 1
-    return [class_a, class_b, class_c]
+            # Add the length of the current series
+            series_lengths.append(current_length)
+            series_count += 1
+            # Reset for the new series
+            current_value = flattened_image[i]
+            current_length = 1
+
+    # Append the final series
+    series_lengths.append(current_length)
+    series_count += 1
+
+    return [series_count, series_lengths]
 
 
 ## Plots
-file_name = 'F-16'
-_format = 'bmp'
-
-image = cv2.imread(f'images/{file_name}.{_format}')
-height, width, channels = image.shape
-
-# CODE FOR TASK 4
-segment_size = 4
-
-segment_array = segment_image_no_overlap(image, segment_size)
-segment_entropies = []
-mean_sq_dev = []
-norm_correlation = []
-
-for i in range(len(segment_array) - 1):
-    norm_correlation.append(normalized_correlation(segment_array[i], segment_array[i + 1]))
-
-norm_correlation.append(0)
-for (segment) in segment_array:
-    segment_entropies.append(calculate_entropy(segment))
-    mean_sq_dev.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
-
-# Plots
-def classification_plot(bars, values, title, xlabel, ylabel, color=['blue', 'green', 'orange']):
+def classification_plot(bars, values, title, xlabel, ylabel, color=None):
+    if color is None:
+        color = ['#40E0D0', '#D4AF37', '#7f00ff']
     plt.figure(figsize=(8, 6))
     plt.bar(bars,
             values,
@@ -353,56 +285,203 @@ def classification_plot(bars, values, title, xlabel, ylabel, color=['blue', 'gre
     plt.ylabel(ylabel)
     plt.tight_layout()
     plt.show()
-# Plots
-
-# DIAGRAM 1 - 3
-entropy_classification = count_distribution(segment_entropies)
-mean_sq_dev_classification = count_distribution(mean_sq_dev)
-norm_correlation_classification = count_distribution(norm_correlation)
-
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], entropy_classification, 'Entropy Classification', 'Entropy Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], mean_sq_dev_classification, 'Mean Squared Deviation Classification', 'MSD Class', 'Number of Segments')
-classification_plot(['Distribution 1', 'Distribution 2', 'Distribution 3'], norm_correlation_classification, 'Normalized Correlation Classification', 'NC Class', 'Number of Segments')
-
-# DIAGRAM 1 - 3
-
-# DIAGRAM 4
-entropy_thresholds = get_variable_thresholds(segment_entropies)
-
-color1 = entropy_to_color(entropy_thresholds[0], entropy_thresholds[0], entropy_thresholds[1], True)
-color2 = entropy_to_color(entropy_thresholds[1], entropy_thresholds[0], entropy_thresholds[1], True)
-
-classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold', 'Entropy Class', 'Number of Segments',[color1, color2])
-# DIAGRAM 4
-
-# DIAGRAM 5
-mean_sq_dev_thresholds = get_variable_thresholds(mean_sq_dev)
-
-color3 = entropy_to_color(mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
-color4 = entropy_to_color(mean_sq_dev_thresholds[1], mean_sq_dev_thresholds[0], mean_sq_dev_thresholds[1], True)
-
-classification_plot(['Threshold 1', 'Threshold 2'], mean_sq_dev_thresholds, 'Mean Squared Deviation Threshold', 'MSD Class', 'Number of Segments', color=[color3, color4])
-# DIAGRAM 5
-
-# DIAGRAM 6
-norm_correlation_thresholds = get_variable_thresholds(norm_correlation)
-
-color5 = entropy_to_color(norm_correlation_thresholds[0], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
-color6 = entropy_to_color(norm_correlation_thresholds[1], norm_correlation_thresholds[0], norm_correlation_thresholds[1], True)
-
-classification_plot(['Threshold 1', 'Threshold 2'], norm_correlation_thresholds, 'Normalized Correlation Threshold', 'NC Class', 'Number of Segments', color=["green", "red"])
-# DIAGRAM 6
 
 
-entropy_img = reconstruct_image(entropies=segment_entropies, n=segment_size, image_size=(width, height), image_name="Entropy Image Reconstruction")
-mean_sq_img = reconstruct_image(entropies=mean_sq_dev, n=segment_size, image_size=(width, height), image_name="MSD Image Reconstruction")
-norm_correlation_img = reconstruct_image(entropies=norm_correlation, n=segment_size, image_size=(width, height), image_name="NC Image Reconstruction")
+def count_brightness_surges(segment):
+    brightness_surges = 0
 
-entropy_img.show("Entropy Image Reconstruction")
-mean_sq_img.show("MSD Image Reconstruction")
-norm_correlation_img.show("NC Image Reconstruction")
+    # Convert the input segment to a NumPy array if it isn't already
+    image_array = np.array(segment)
 
-entropy_img.save(f'saves/entropy_{file_name}.bmp')
-mean_sq_img.save(f'saves/msd_{file_name}.bmp')
-norm_correlation_img.save(f'saves/nc_{file_name}.bmp')
+    # Assuming the segment is in YCbCr format, extract the Y channel (luminance)
+    # The Y channel is typically the first channel in the YCbCr representation
+    if image_array.ndim == 3 and image_array.shape[2] == 3:  # Check if it's a 3-channel image
+        y_channel = image_array[:, :, 0]  # Get the Y channel
+    else:
+        # If the input is not in the expected format, raise an error or handle accordingly
+        raise ValueError("Input segment must be a 3-channel YCbCr image")
+
+    # Flatten the Y channel to 1D
+    flattened_image = y_channel.flatten()
+
+    # Count brightness surges
+    for i in range(1, len(flattened_image)):
+        if flattened_image[i] != flattened_image[i - 1]:
+            brightness_surges += 1
+
+    return brightness_surges
+
+
+def save_threshold_images(image_name, thresholds, image, n, values, dims):
+    img1 = threshold_image(image, values, [thresholds[2], thresholds[0]], n, dims)
+    img1.save("saves/0" + image_name + ".png")
+    img1 = threshold_image(image, values, [thresholds[0], thresholds[1]], n, dims)
+    img1.save("saves/1" + image_name + ".png")
+    img1 = threshold_image(image, values, [thresholds[1], thresholds[3]], n, dims)
+    img1.save("saves/2" + image_name + ".png")
+
+import csv
+def order_mistakes(values, thresholds, file_path, number):
+    _list = []
+
+    first_order_mistake = 0
+    second_order_mistake = 0
+
+    with open(file_path, mode='r') as file:
+        csv_reader = csv.reader(file)
+        for row in csv_reader:
+            _list.append(row)
+
+    cnt = 0
+
+    correct_values = 0
+
+    for value in values:
+
+        category = 0
+        if value < thresholds[0]:
+            category = 1
+        elif value > thresholds[1]:
+            category = 3
+        else:
+            category = 2
+
+        if category == int(_list[number][cnt]):
+            correct_values += 1
+        elif category > int(_list[number][cnt]):
+            second_order_mistake += 1
+        else:
+            first_order_mistake += 1
+
+        cnt += 1
+
+    return [correct_values, second_order_mistake, first_order_mistake]
+
+def compute_correlations(series_length, brightness_segments, brightness_surges, entropies, msd):
+    # List of features to compare
+    features = [series_length, brightness_segments, brightness_surges, entropies, msd]
+
+    # Initialize a 5x5 matrix with zeros
+    matrix_size = len(features)
+    correlation_matrix = [[0] * matrix_size for _ in range(matrix_size)]
+
+    # Iterate over each pair of features to fill the matrix
+    for i in range(matrix_size):
+        for j in range(i, matrix_size):
+            # Calculate correlation only if both lists have data
+            if features[i] and features[j]:
+                correlation_value = normalized_correlation(features[i], features[j])
+                # Store the correlation in the matrix for both (i, j) and (j, i)
+                correlation_matrix[i][j] = correlation_value
+                correlation_matrix[j][i] = correlation_value
+
+    return correlation_matrix
+
+
+file_name = 'F-16'
+_format = 'bmp'
+
+image = cv2.imread(f'images/{file_name}.{_format}')
+pil_img = Image.open(f'images/{file_name}.{_format}')
+
+height, width, channels = image.shape
+image = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+
 # CODE FOR TASK 4
+segment_size = 128
+segment_array = segment_image_no_overlap(image, segment_size)
+
+series_length = []
+brightness_segments = []
+brightness_surges = []
+entropies = []
+msd = []
+for segment in segment_array:
+    tmp = calculate_series_lengths(segment)
+    series_length.append(np.sum(tmp[1]) / len(tmp[1]))
+    brightness_segments.append(mean_arithmetical_expectation(segment))
+    brightness_surges.append(count_brightness_surges(segment))
+    entropies.append(calculate_entropy(segment))
+    msd.append(mean_squared_deviation(segment, mean_arithmetical_expectation(segment)))
+
+brightness_segments_img = reconstruct_image(brightness_segments, segment_size, (width, height), "Brightness")
+# series_img = reconstruct_image(series_count, segment_size, (width, height), "Series count")
+series_length_img = reconstruct_image(series_length, segment_size, (width, height), "Series length")
+brightness_surges_img = reconstruct_image(brightness_surges, segment_size, (width, height), "Brightness Surges")
+entropy_image = reconstruct_image(entropies, segment_size, (width, height), "Entropy image")
+msd_image = reconstruct_image(msd, segment_size, (width, height), "MSD")
+
+save_threshold_images('entropy_image', get_variable_thresholds(entropies), pil_img,
+                      segment_size, entropies, (width, height))
+save_threshold_images('series_length_image', get_variable_thresholds(series_length), pil_img,
+                      segment_size, series_length, (width, height))
+save_threshold_images('brightness_surges_image', get_variable_thresholds(brightness_surges), pil_img,
+                      segment_size, brightness_surges, (width, height))
+save_threshold_images('msd_image', get_variable_thresholds(msd), pil_img,
+                      segment_size, msd, (width, height))
+
+cv2.imshow("YCbCr Image", image)
+series_length_img.show()
+brightness_segments_img.show()
+brightness_surges_img.show()
+entropy_image.show()
+
+strings = ['Series Length', 'Brightness Surges', 'Entropy', 'MSD']
+
+matrix = compute_correlations(series_length, brightness_segments, brightness_surges, entropies, msd)
+
+# DIAGRAM 2
+series_length_thresholds = get_variable_thresholds(series_length)
+
+first_color = entropy_to_color(series_length_thresholds[0], series_length_thresholds[2], series_length_thresholds[3],
+                               True)
+second_color = entropy_to_color(series_length_thresholds[1], series_length_thresholds[2], series_length_thresholds[3],
+                                True)
+series_length_thresholds = [series_length_thresholds[0], series_length_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], series_length_thresholds, 'Series length Threshold',
+                    'NC Class', 'Threshold Value', color=[first_color, second_color])
+
+# DIAGRAM 3
+brightness_segments_thresholds = get_variable_thresholds(brightness_segments)
+
+first_color = entropy_to_color(brightness_segments_thresholds[0], brightness_segments_thresholds[2],
+                               brightness_segments_thresholds[3], True)
+second_color = entropy_to_color(brightness_segments_thresholds[1], brightness_segments_thresholds[2],
+                                brightness_segments_thresholds[3], True)
+
+brightness_segments_thresholds = [brightness_segments_thresholds[0], brightness_segments_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_segments_thresholds, 'Brightness Threshold',
+                    'NC Class', 'Threshold Value', color=[first_color, second_color])
+
+# DIAGRAM 4
+brightness_surges_thresholds = get_variable_thresholds(brightness_surges)
+
+first_color = entropy_to_color(brightness_surges_thresholds[0], brightness_surges_thresholds[2],
+                               brightness_surges_thresholds[3], True)
+second_color = entropy_to_color(brightness_surges_thresholds[1], brightness_surges_thresholds[2],
+                                brightness_surges_thresholds[3], True)
+
+brightness_surges_thresholds = [brightness_surges_thresholds[0], brightness_surges_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], brightness_surges_thresholds, 'Brightness Surges Threshold',
+                    'NC Class', 'Threshold Value', color=[first_color, second_color])
+
+entropy_thresholds = get_variable_thresholds(entropies)
+
+first_color = entropy_to_color(entropy_thresholds[0], entropy_thresholds[2], entropy_thresholds[3], True)
+second_color = entropy_to_color(entropy_thresholds[1], entropy_thresholds[2], entropy_thresholds[3], True)
+
+entropy_thresholds = [entropy_thresholds[0], entropy_thresholds[1]]
+classification_plot(['Threshold 1', 'Threshold 2'], entropy_thresholds, 'Entropy Threshold',
+                    'NC Class', 'Threshold Value', color=[first_color, second_color])
+
+file_path = 'expert_estimations/expert1estimate.csv'
+
+print("Entropy:", order_mistakes(entropies, entropy_thresholds, file_path, 0))
+# correct, 1-order mistake, 2-order mistake
+print("MSE:", order_mistakes(msd, get_variable_thresholds(msd), file_path, 1))
+# correct, 1-order mistake, 2-order mistake
+print("BrSurges:", order_mistakes(brightness_surges, brightness_surges_thresholds, file_path, 2))
+# correct, 1-order mistake, 2-order mistake
+print("Series Length:", order_mistakes(series_length, series_length_thresholds, file_path, 3))
+
+cv2.waitKey(0)
