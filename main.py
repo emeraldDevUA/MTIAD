@@ -320,7 +320,10 @@ def save_threshold_images(image_name, thresholds, image, n, values, dims):
     img1 = threshold_image(image, values, [thresholds[1], thresholds[3]], n, dims)
     img1.save("saves/2" + image_name + ".png")
 
+
 import csv
+
+
 def order_mistakes(values, thresholds, file_path, number):
     _list = []
 
@@ -356,6 +359,7 @@ def order_mistakes(values, thresholds, file_path, number):
         cnt += 1
 
     return [correct_values, second_order_mistake, first_order_mistake]
+
 
 def compute_correlations(series_length, brightness_segments, brightness_surges, entropies, msd):
     # List of features to compare
@@ -438,18 +442,18 @@ def compute_correlations_plot(matrix, titles):
     # Annotate the correlation values on the plot
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
-            plt.text(j, i, f"{matrix[i][j]:.2f}", ha='center', va='center', color='black' if abs(matrix[i][j]) < 0.7 else 'white')
+            plt.text(j, i, f"{matrix[i][j]:.2f}", ha='center', va='center',
+                     color='black' if abs(matrix[i][j]) < 0.7 else 'white')
 
     plt.tight_layout()
     plt.show()
 
-strings = ['Series Length', 'Brightness Surges', 'Entropy', 'MSD']
+# series_length, brightness_segments, brightness_surges, entropies, msd
+strings = ['Series Length', 'Overall Brightness', 'Brightness Surges', 'Entropy', 'MSD']
 
 matrix = compute_correlations(series_length, brightness_segments, brightness_surges, entropies, msd)
 
 compute_correlations_plot(matrix, strings)
-
-
 
 # DIAGRAM 2
 series_length_thresholds = get_variable_thresholds(series_length)
