@@ -232,7 +232,7 @@ def threshold_image(image, values, threshold, n, image_size):
 
             # Get the entropy for this segment
             entropy = values[idx]
-            if not threshold[0] < entropy < threshold[1]:
+            if not threshold[0] <= entropy <= threshold[1]:
                 draw.rectangle([j * n, i * n, (j + 1) * n, (i + 1) * n], fill='Black')
 
     # Add text to the new image
@@ -259,6 +259,8 @@ def calculate_series_lengths(image):
             current_length += 1
         else:
             # Add the length of the current series
+            if current_length > 1:
+                current_length *= 500
             series_lengths.append(current_length)
             series_count += 1
             # Reset for the new series
@@ -402,7 +404,7 @@ entropies = []
 msd = []
 for segment in segment_array:
     tmp = calculate_series_lengths(segment)
-    series_length.append(np.sum(tmp[1]) / len(tmp[1]))
+    series_length.append(np.mean(tmp[1]))
     brightness_segments.append(mean_arithmetical_expectation(segment))
     brightness_surges.append(count_brightness_surges(segment))
     entropies.append(calculate_entropy(segment))
@@ -429,7 +431,7 @@ series_length_img.show()
 brightness_segments_img.show()
 brightness_surges_img.show()
 entropy_image.show()
-
+msd_image.show()
 
 def compute_correlations_plot(matrix, titles):
     plt.figure(figsize=(8, 6))
