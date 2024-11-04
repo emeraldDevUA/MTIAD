@@ -260,7 +260,7 @@ def calculate_series_lengths(image):
         else:
             # Add the length of the current series
             if current_length > 1:
-                current_length *= 500
+                current_length *= 5000
             series_lengths.append(current_length)
             series_count += 1
             # Reset for the new series
@@ -340,7 +340,7 @@ def order_mistakes(values, thresholds, file_path, number):
     cnt = 0
 
     correct_values = 0
-
+    n = 288
     for value in values:
 
         category = 0
@@ -351,9 +351,9 @@ def order_mistakes(values, thresholds, file_path, number):
         else:
             category = 2
 
-        if category == int(_list[number][cnt]):
+        if category == int(_list[number][int(cnt / n)]):
             correct_values += 1
-        elif category > int(_list[number][cnt]):
+        elif category > int(_list[number][int(cnt / n)]):
             second_order_mistake += 1
         else:
             first_order_mistake += 1
@@ -394,7 +394,7 @@ height, width, channels = image.shape
 image = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
 
 # CODE FOR TASK 4
-segment_size = 128
+segment_size = 8
 segment_array = segment_image_no_overlap(image, segment_size)
 
 series_length = []
@@ -433,6 +433,7 @@ brightness_surges_img.show()
 entropy_image.show()
 msd_image.show()
 
+
 def compute_correlations_plot(matrix, titles):
     plt.figure(figsize=(8, 6))
     plt.imshow(matrix, cmap='coolwarm', interpolation='nearest')
@@ -449,6 +450,7 @@ def compute_correlations_plot(matrix, titles):
 
     plt.tight_layout()
     plt.show()
+
 
 # series_length, brightness_segments, brightness_surges, entropies, msd
 strings = ['Series Length', 'Overall Brightness', 'Brightness Surges', 'Entropy', 'MSD']

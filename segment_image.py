@@ -5,7 +5,7 @@ def segment_image(input_image_path, output_image_path):
     image = Image.open(input_image_path)
     draw = ImageDraw.Draw(image)
 
-    segment_size = 64
+    segment_size = 8
     width, height = image.size
 
     font = ImageFont.load_default()
@@ -24,6 +24,6 @@ def segment_image(input_image_path, output_image_path):
     image.save(output_image_path)
 
 
-input_image = "images/I23.BMP"
-output_image = "images/I23-segmented.BMP"
+input_image = "images/F-16.BMP"
+output_image = "images/F-16-segmented.BMP"
 segment_image(input_image, output_image)
