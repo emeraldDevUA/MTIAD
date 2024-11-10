@@ -54,6 +54,11 @@ def restore_image_with_segments(image, segment_length=32, row=True):
 
             # Clip values to stay within valid pixel range (50-205) and add to restored segment
             approximated_sub_segment = np.clip(approximated_sub_segment, 50, 205).astype(np.uint8)
+            approximated_sub_segment = np.where(
+                (approximated_sub_segment > 50) & (approximated_sub_segment < 205),
+                77,  # You can also use 78 depending on your rounding preference
+                approximated_sub_segment
+            )
             restored_segment.extend(approximated_sub_segment)
 
         # Convert restored segment to numpy array and place it in the image
@@ -103,7 +108,7 @@ plt.imshow(image, cmap='gray')
 
 plt.subplot(1, 2, 2)
 plt.title(f"Restored Image (Row-wise Linear Regression)\nAverage MSE: {average_mse:.2f}")
-plt.imshow(restored_image, cmap='gray')
+plt.imshow(restored_image, cmap='plasma')
 plt.show()
 
 # Plot MSE values for each segment
