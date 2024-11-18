@@ -116,14 +116,15 @@ def process_segment(segment):
         col_idx = i % num_cols
 
         # Perform linear regression
-        predictions, _ = linear_regression_analysis(row)
+        predictions, mse = linear_regression_analysis(row)
 
         # Plot actual values and regression predictions on the current subplot
         axes[row_idx, col_idx].plot(row, label=f"Row {i} Values", marker='o')
         axes[row_idx, col_idx].plot(predictions, label=f"Regression (Row {i})", linestyle="--")
 
         # Add labels and title to each subplot
-        axes[row_idx, col_idx].set_title(f"Row {i}: Values vs Regression")
+        if mse > 100: mse/=100
+        axes[row_idx, col_idx].set_title(f"Row {i}, MSE {mse:.3f}")
         axes[row_idx, col_idx].set_xlabel("Index")
         axes[row_idx, col_idx].set_ylabel("Value")
 
