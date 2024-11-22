@@ -42,9 +42,7 @@ def apply_idct(dct_segment):
     return idct(idct(dct_segment.T, type=2, norm='ortho').T, type=2, norm='ortho')
 
 
-
 def round_coefficients(dct_image):
-
     return np.round(dct_image)
 
 
@@ -95,7 +93,8 @@ def process_image(original_image):
     plt.tight_layout()
     plt.show()
 
-    return reconstructed_image, rmse
+    return reconstructed_image, rmse, np.abs(original_image - reconstructed_image)
+
 
 def apply_dct_to_rows(segment):
     dct_rows = []
@@ -103,6 +102,7 @@ def apply_dct_to_rows(segment):
         dct_row = cv2.dct(np.float32(row).reshape(-1, 1))  # Apply DCT to the row
         dct_rows.append(dct_row.flatten())  # Flatten back to 1D
     return np.array(dct_rows)
+
 
 def calculate_mse(original_row, reconstructed_row):
     """
@@ -127,6 +127,8 @@ def calculate_mse(original_row, reconstructed_row):
     # Calculate and return the mean of squared differences
     mse = np.mean(squared_diff)
     return mse
+
+
 def process_segment(segment):
     """
     Divide a segment into rows and plot their pixel values in a grid.
@@ -150,7 +152,8 @@ def process_segment(segment):
         reconstructed_row = apply_dct_to_rows(row)
         # Plot pixel values for the current row
         axes[row_idx, col_idx].plot(row, label=f"Original Row {i} Values", marker='o')
-        axes[row_idx, col_idx].plot(reconstructed_row, label=f"Reconstructed Row {i} Values", marker='x', color='orange')
+        axes[row_idx, col_idx].plot(reconstructed_row, label=f"Reconstructed Row {i} Values", marker='x',
+                                    color='orange')
         axes[row_idx, col_idx].set_title(f"Row {i}, MSE = {calculate_mse(row, reconstructed_row.flatten()):.4f}")
         axes[row_idx, col_idx].set_xlabel("Index")
         axes[row_idx, col_idx].set_ylabel("Value")
@@ -235,6 +238,36 @@ def fetch_segments(entropy_values, min_entropy, max_entropy):
     return categories
 
 
+def fetch_all_segments(entropy_values, min_entropy, max_entropy):
+    """
+    Fetch all segments in low, medium, and high categories based on normalized entropy values.
+
+    Parameters:
+    - entropy_values: List of entropy values for segments.
+    - min_entropy: Minimum entropy value for normalization.
+    - max_entropy: Maximum entropy value for normalization.
+
+    Returns:
+    - A dictionary with segment indices categorized as 'low', 'medium', or 'high'.
+    """
+    # Initialize placeholders for each category
+    categories = {'low': [], 'medium': [], 'high': []}
+
+    for i, entropy in enumerate(entropy_values):
+        # Normalize the entropy
+        normalized = (entropy - min_entropy) / (max_entropy - min_entropy)
+
+        # Determine the category and append the segment index
+        if normalized < 0.45:
+            categories['low'].append(i)  # Low entropy segments
+        elif 0.45 <= normalized <= 0.55:
+            categories['medium'].append(i)  # Medium entropy segments
+        elif normalized > 0.55:
+            categories['high'].append(i)  # High entropy segments
+
+    return categories
+
+
 def mean_arithmetical_expectation(image):
     if len(image.shape) == 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -267,6 +300,49 @@ process_sq_segment(segment_array[critical_segments['low']])
 process_sq_segment(segment_array[critical_segments['medium']])
 process_sq_segment(segment_array[critical_segments['high']])
 
-rmse = process_image(original_image)[1]
+img, rmse, mse_values = process_image(original_image)
 
 print(f"Root Mean Square Error (RMSE): {rmse:.2f}")
+
+plt.figure(figsize=(10, 5))
+plt.plot(mse_values, color='teal')
+plt.axhline(y=rmse, color='red', linestyle='--', label=f"Average MSE ({rmse:.2f})")
+plt.title("MSE per Segment in Restored Image")
+plt.xlabel("Segment Index")
+plt.ylabel("MSE")
+plt.show()
+
+process_image(segment_array[critical_segments['low']])
+process_image(segment_array[critical_segments['medium']])
+process_image(segment_array[critical_segments['high']])
+
+
+segments = fetch_all_segments(brightness, np.min(brightness), np.max(brightness))
+mean_br = np.mean(brightness)
+
+low_mse = 0
+mid_mse = 0
+high_mse = 0
+
+print(segments['low'])
+for segment in segments['low']:
+    low_mse += pow(mean_br - mean_arithmetical_expectation(segment_array[segment]), 2)
+
+for segment in segments['medium']:
+    mid_mse += pow(mean_br - mean_arithmetical_expectation(segment_array[segment]), 2)
+
+for segment in segments['high']:
+    high_mse += pow(mean_br - mean_arithmetical_expectation(segment_array[segment]), 2)
+
+labels = ['Low Brightness', 'Medium Brightness', 'High Brightness']
+mse_values = [low_mse, mid_mse, high_mse]
+
+# Plotting the MSE values
+plt.figure(figsize=(8, 6))
+plt.bar(labels, mse_values, color=['blue', 'orange', 'green'])
+plt.title('MSE for Low, Medium, and High Segments')
+plt.xlabel('Segment Category')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
