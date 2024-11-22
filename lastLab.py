@@ -86,7 +86,7 @@ def process_image(original_image):
     plt.axis('off')
 
     plt.subplot(1, 3, 3)
-    plt.title(f"Reconstructed Image\\nRMSE: {rmse:.2f}")
+    plt.title(f"Reconstructed Image. MSE: {rmse:.2f}")
     plt.imshow(reconstructed_image, cmap='gray')
     plt.axis('off')
 
